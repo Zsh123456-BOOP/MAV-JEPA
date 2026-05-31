@@ -52,3 +52,15 @@ Server: `10.154.22.11`, commit `b0a09a0`, conda env `mav-jepa`.
 - `data/mv/spider/train.jsonl`: 6587 kept, 0 skipped, 6587 missing DB.
 - `data/mv/spider/eval.jsonl`: 1447 kept, 0 skipped, 1447 missing DB.
 - Spider SQLite execution views were skipped because upstream `spider_data.zip` is an unavailable LFS pointer; `QS -> SQL`, `Q -> SQL`, and `Q -> S` views/edges were generated.
+
+## Task 03 acceptance
+
+Server: `10.154.22.11`, commit `6fff1c4`, conda env `mav-jepa`, `CUDA_VISIBLE_DEVICES=0`.
+
+- `python finetune_mv.py --help`: passed; required MAV-JEPA CLI flags are present.
+- `pytest tests/test_loss_shapes.py -q`: 3 passed.
+- `torchrun --nproc_per_node=1 finetune_mv.py ... --track_flop` on `data/mv/gsm8k/train_64.jsonl`: success.
+- Output artifacts under `outputs/smoke/mv_gsm8k`: `run_config.json`, `metrics.jsonl`, `train.log`, `results.json`, `checkpoint-final/`.
+- Smoke metrics: `train_steps=64`, `train_loss=1.1943`, `ce_loss=0.4977`, `jepa_loss=0.6967`, `wall_clock_sec=21.9263`, `gpu_hours=0.006091`, `peak_vram_gb=8.3506`, `avg_steps_per_sec=2.9189`, `avg_tokens_per_sec=997.7974`, `estimated_total_flops=205012304117760`, `jepa_edges_per_step=1.0`.
+- Edge sampling frequency: `Q_to_R=25`, `Q_to_A=22`, `R_to_A=17`.
+- Model source: ModelScope snapshot `/home/zsh/.cache/modelscope/hub/models/Qwen/Qwen2___5-1___5B-Instruct`; no fallback was needed for this run.
