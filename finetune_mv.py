@@ -146,9 +146,15 @@ def build_run_config(args: argparse.Namespace, requested_model: str, model_meta:
         **model_meta,
         "train_file": args.train_file,
         "eval_file": args.eval_file,
+        "task": infer_task(args.train_file, args.view_config),
         "method": "mav_jepa" if args.mv_jepa else "sft",
         "seed": args.finetune_seed,
         "num_epochs": args.num_epochs,
+        "learning_rate": args.learning_rate,
+        "batch_size": args.batch_size,
+        "grad_accum": args.grad_accum,
+        "max_length": args.max_length,
+        "view_max_length": args.view_max_length,
         "lora": args.lora,
         "lora_rank": args.lora_rank,
         "view_config": args.view_config,
@@ -160,6 +166,8 @@ def build_run_config(args: argparse.Namespace, requested_model: str, model_meta:
         "target_compute_ratio": args.target_compute_ratio,
         "mv_loss_type": args.mv_loss_type,
         "detach_target": args.detach_target,
+        "track_flop": args.track_flop,
+        "same_flop": args.same_flop,
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
         "start_time": datetime.now(timezone.utc).isoformat(),
     }
@@ -172,6 +180,14 @@ def git_commit() -> str:
         return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     except Exception:
         return "unknown"
+
+
+def infer_task(train_file: str | None, view_config: str | None) -> str | None:
+    text = " ".join(part for part in [train_file, view_config] if part).lower()
+    for task in ["gsm8k", "spider", "hotpot"]:
+        if task in text:
+            return "hotpotqa" if task == "hotpot" else task
+    return None
 
 
 if __name__ == "__main__":

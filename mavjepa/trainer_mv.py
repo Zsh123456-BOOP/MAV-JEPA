@@ -99,6 +99,7 @@ class MultiViewTrainer:
             if isinstance(cfg, dict)
         }
         self.total_params = sum(param.numel() for param in self.model.parameters())
+        self.trainable_params = sum(param.numel() for param in self.model.parameters() if param.requires_grad)
 
     def train(self, train_file: str, eval_file: str | None = None) -> dict[str, Any]:
         dataset = MVJEPADataset(
@@ -213,6 +214,8 @@ class MultiViewTrainer:
             "edge_sampling_frequency": dict(self.edge_counts),
             "lambda_history": self.lambda_controller.state_dict() if self.args.adaptive_lambda else None,
             "same_flop_accuracy": None,
+            "trainable_params": self.trainable_params,
+            "total_params": self.total_params,
             "eval_file": eval_file,
         }
 
