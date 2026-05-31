@@ -112,3 +112,12 @@ Server: `10.154.22.11`, current code commit `2f5f26d`, conda env `mav-jepa`, `CU
 - `outputs/aggregate/ablation.csv`: 12 ablation rows plus header, covering A0-A5 for both GSM8K and Spider.
 - `outputs/aggregate/ablation.md`: generated and answers the required questions using available smoke-run loss/compute proxies; quality metrics remain `null` until prediction files are generated.
 - Optional A6/A7/A8 rank, edge-removal, and same-FLOP sweeps were not launched, per priority constraints.
+
+## Task 09 acceptance
+
+Server: `10.154.22.11`, commit `0bcbe02`, conda env `mav-jepa`.
+
+- `python scripts/70_aggregate_results.py --outputs_dir outputs --make_plots`: passed and regenerated `outputs/aggregate/results.csv`.
+- Generated figures: `loss_curves_gsm8k.png`, `loss_curves_spider.png`, `edge_sampling_gsm8k.png`, `edge_sampling_spider.png`, `lambda_dynamics_gsm8k.png`, `lambda_dynamics_spider.png`, `compute_vs_score.png`.
+- Generated analysis artifacts: `outputs/analysis/view_edge_table.md` and `outputs/analysis/error_cases.jsonl`.
+- Current artifacts are smoke-run diagnostics; qualitative error cases remain empty until prediction/generation files are produced.
