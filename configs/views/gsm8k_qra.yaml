@@ -1,0 +1,22 @@
+task: gsm8k
+views:
+  Q:
+    max_length: 256
+  R:
+    max_length: 384
+  A:
+    max_length: 64
+edges:
+  - name: Q_to_R
+    src: Q
+    tgt: R
+    quality: 1.0
+  - name: R_to_A
+    src: R
+    tgt: A
+    quality: 1.0
+  - name: Q_to_A
+    src: Q
+    tgt: A
+    quality: 0.7
+default_edge_budget: 1

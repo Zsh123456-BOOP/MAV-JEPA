@@ -1,0 +1,27 @@
+task: spider
+views:
+  Q:
+    max_length: 256
+  S:
+    max_length: 512
+  QS:
+    max_length: 768
+  SQL:
+    max_length: 256
+  RESULT:
+    max_length: 256
+edges:
+  - name: QS_to_SQL
+    src: QS
+    tgt: SQL
+    quality: 1.0
+  - name: Q_to_SQL
+    src: Q
+    tgt: SQL
+    quality: 0.7
+  - name: SQL_to_RESULT
+    src: SQL
+    tgt: RESULT
+    quality: 0.8
+    optional: true
+default_edge_budget: 1
