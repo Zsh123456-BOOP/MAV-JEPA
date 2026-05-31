@@ -81,3 +81,15 @@ Server: `10.154.22.11`, commit `d3a7e62`, conda env `mav-jepa`.
 - `pytest tests/test_edge_sampler.py -q`: 7 passed.
 - `pytest tests/test_edge_sampler.py tests/test_adaptive_lambda.py tests/test_loss_shapes.py -q`: 14 passed.
 - Edge sampler supports `none`, `random`, and `adaptive`; adaptive probabilities use EMA loss and edge quality, respect `edge_budget`, keep nonzero probability for low-score edges, and skip temporarily blacklisted repeatedly non-finite edges.
+
+## Task 06 acceptance
+
+Server: `10.154.22.11`, commit `501058c`, conda env `mav-jepa`, `CUDA_VISIBLE_DEVICES=2`.
+
+- Ran the one-GPU smoke matrix on the least-occupied visible card at launch, GPU 2.
+- Tasks: `gsm8k` and `spider`; model: `Qwen/Qwen2.5-1.5B-Instruct` resolved from ModelScope.
+- Methods completed for both tasks: `sft_lora`, `original_llm_jepa_lora`, `original_llm_jepa_random_dropout`, `mv_jepa_fixed_lambda`, `mav_jepa_full`.
+- All 10 Task 06 smoke runs wrote `run_status.json` with `status=success`.
+- `outputs/aggregate/results.csv`: 13 result rows plus header. The required columns are present: `run_name, task, model, method, seed, lora_rank, lr, accuracy, exact_match, exec_acc, train_loss, jepa_loss, flops, wall_clock_sec, trainable_params`.
+- Representative wall-clock seconds: GSM8K SFT 34.32, GSM8K original JEPA 43.40, GSM8K MAV-JEPA full 24.32, Spider SFT 32.30, Spider original JEPA 47.91, Spider MAV-JEPA full 19.96.
+- This is the Task 06 smoke matrix with `seed=0`, `lr=2e-5`, `lora_rank=16`, and 64 train/eval samples per task. Larger multi-seed/rank sweeps are intentionally not launched yet while validating the one-card workflow.
