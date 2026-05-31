@@ -1,0 +1,16 @@
+torch
+torchvision
+transformers
+datasets
+accelerate
+peft==0.17.0
+modelscope
+sentencepiece
+protobuf
+safetensors
+pyyaml
+numpy==2.3.2
+tqdm
+scikit-learn
+matplotlib
+pytest

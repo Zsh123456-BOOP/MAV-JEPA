@@ -1,0 +1,23 @@
+name: mav-jepa
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - torch
+      - torchvision
+      - transformers==4.55.2
+      - datasets
+      - accelerate
+      - peft==0.17.0
+      - modelscope
+      - sentencepiece
+      - protobuf
+      - safetensors
+      - pyyaml
+      - numpy==2.3.2
+      - tqdm
+      - scikit-learn
+      - matplotlib
+      - pytest
