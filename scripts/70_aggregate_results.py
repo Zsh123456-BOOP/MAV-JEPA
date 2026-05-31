@@ -45,6 +45,8 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(rows)
     write_ablation_outputs(Path(args.outputs_dir), rows)
+    if args.make_plots:
+        make_plots(Path(args.outputs_dir), rows)
     print(f"Wrote {len(rows)} rows to {output_csv}")
 
 
@@ -89,11 +91,182 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows = []
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                rows.append(json.loads(line))
+    return rows
+
+
 def first_present(mapping: dict[str, Any], keys: list[str]) -> Any:
     for key in keys:
         if key in mapping:
             return mapping[key]
     return None
+
+
+def make_plots(outputs_dir: Path, rows: list[dict[str, str]]) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    figures_dir = outputs_dir / "figures"
+    analysis_dir = outputs_dir / "analysis"
+    figures_dir.mkdir(parents=True, exist_ok=True)
+    analysis_dir.mkdir(parents=True, exist_ok=True)
+    run_dirs = list(iter_run_dirs(outputs_dir))
+    tasks = ["gsm8k", "spider"]
+    for task in tasks:
+        task_dirs = [path for path in run_dirs if run_task(path) == task]
+        plot_loss_curves(plt, task, task_dirs, figures_dir / f"loss_curves_{task}.png")
+        plot_edge_sampling(plt, task, task_dirs, figures_dir / f"edge_sampling_{task}.png")
+        plot_lambda_dynamics(plt, task, task_dirs, figures_dir / f"lambda_dynamics_{task}.png")
+    plot_compute_vs_score(plt, rows, figures_dir / "compute_vs_score.png")
+    write_view_edge_table(analysis_dir / "view_edge_table.md", run_dirs)
+    error_cases_path = analysis_dir / "error_cases.jsonl"
+    if not error_cases_path.exists():
+        error_cases_path.write_text("", encoding="utf-8")
+
+
+def run_task(run_dir: Path) -> str | None:
+    config = read_json(run_dir / "run_config.json")
+    return config.get("task") or infer_task(config.get("train_file"))
+
+
+def plot_loss_curves(plt: Any, task: str, run_dirs: list[Path], output_path: Path) -> None:
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    plotted = False
+    for run_dir in run_dirs:
+        metrics = read_jsonl(run_dir / "metrics.jsonl")
+        steps = [row.get("step") for row in metrics if row.get("step") is not None]
+        if not steps:
+            continue
+        for key, style in [("ce_loss", "-"), ("jepa_loss", "--"), ("total_loss", ":")]:
+            values = [row.get(key) for row in metrics if row.get("step") is not None]
+            if any(value is not None for value in values):
+                ax.plot(steps, values, style, linewidth=1.2, label=f"{run_dir.name}:{key}")
+                plotted = True
+    if not plotted:
+        ax.text(0.5, 0.5, f"No step loss metrics for {task}", ha="center", va="center")
+    ax.set_title(f"{task} loss curves")
+    ax.set_xlabel("step")
+    ax.set_ylabel("loss")
+    ax.legend(fontsize=6, loc="best") if plotted else None
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def plot_edge_sampling(plt: Any, task: str, run_dirs: list[Path], output_path: Path) -> None:
+    counts: dict[str, int] = {}
+    for run_dir in run_dirs:
+        results = read_json(run_dir / "results.json")
+        for edge, count in (results.get("edge_sampling_frequency") or {}).items():
+            counts[edge] = counts.get(edge, 0) + int(count)
+        for row in read_jsonl(run_dir / "metrics.jsonl"):
+            for edge in row.get("active_edges") or []:
+                counts[edge] = counts.get(edge, 0) + 1
+    fig, ax = plt.subplots(figsize=(7, 4))
+    if counts:
+        names = sorted(counts)
+        ax.bar(names, [counts[name] for name in names], color="#2f6f6d")
+        ax.tick_params(axis="x", rotation=30)
+    else:
+        ax.text(0.5, 0.5, f"No edge sampling metrics for {task}", ha="center", va="center")
+    ax.set_title(f"{task} edge sampling")
+    ax.set_ylabel("selected count")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def plot_lambda_dynamics(plt: Any, task: str, run_dirs: list[Path], output_path: Path) -> None:
+    series: dict[str, list[tuple[int, float]]] = {}
+    for run_dir in run_dirs:
+        for row in read_jsonl(run_dir / "metrics.jsonl"):
+            step = row.get("step")
+            if step is None:
+                continue
+            for edge, value in (row.get("lambda_by_edge") or {}).items():
+                if value is not None:
+                    series.setdefault(edge, []).append((int(step), float(value)))
+    fig, ax = plt.subplots(figsize=(7, 4))
+    if series:
+        for edge, points in sorted(series.items()):
+            ax.plot([p[0] for p in points], [p[1] for p in points], label=edge)
+        ax.legend(fontsize=7, loc="best")
+    else:
+        ax.text(0.5, 0.5, f"No lambda dynamics for {task}", ha="center", va="center")
+    ax.set_title(f"{task} lambda dynamics")
+    ax.set_xlabel("step")
+    ax.set_ylabel("lambda")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def plot_compute_vs_score(plt: Any, rows: list[dict[str, str]], output_path: Path) -> None:
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    plotted = False
+    for row in rows:
+        flops = parse_float(row.get("flops"))
+        score = parse_float(row.get("exact_match"))
+        if score is None:
+            score = parse_float(row.get("train_loss"))
+        if flops is None or score is None:
+            continue
+        ax.scatter(flops, score, s=28)
+        ax.annotate(f"{row.get('task')}:{row.get('method')}", (flops, score), fontsize=6)
+        plotted = True
+    if plotted:
+        ax.set_xscale("log")
+    else:
+        ax.text(0.5, 0.5, "No paired compute/score metrics yet", ha="center", va="center")
+    ax.set_title("Compute vs score/loss")
+    ax.set_xlabel("estimated FLOPs")
+    ax.set_ylabel("exact match if available, else train loss")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def write_view_edge_table(output_path: Path, run_dirs: list[Path]) -> None:
+    lines = [
+        "# View Edge Sampling Table",
+        "",
+        "| Task | Run | Edge | Count |",
+        "|---|---|---|---:|",
+    ]
+    emitted = False
+    for run_dir in run_dirs:
+        task = run_task(run_dir) or "unknown"
+        counts: dict[str, int] = {}
+        results = read_json(run_dir / "results.json")
+        for edge, count in (results.get("edge_sampling_frequency") or {}).items():
+            counts[edge] = counts.get(edge, 0) + int(count)
+        for row in read_jsonl(run_dir / "metrics.jsonl"):
+            for edge in row.get("active_edges") or []:
+                counts[edge] = counts.get(edge, 0) + 1
+        for edge, count in sorted(counts.items()):
+            lines.append(f"| {task} | {run_dir.name} | {edge} | {count} |")
+            emitted = True
+    if not emitted:
+        lines.append("| null | null | null | 0 |")
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def parse_float(value: str | None) -> float | None:
+    if value in {None, "", "null"}:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
 
 
 def infer_task(train_file: str | None) -> str | None:
