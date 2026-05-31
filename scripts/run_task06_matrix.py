@@ -62,6 +62,24 @@ MAV_METHODS = {
             "adaptive",
         ),
     ),
+    "mv_jepa_adaptive_lambda": MethodSpec(
+        "mv_jepa_adaptive_lambda",
+        "finetune_mv.py",
+        ("--mv_jepa", "--predictors", "1", "--lambda_base", "1.0", "--adaptive_lambda", "--edge_dropout", "none"),
+    ),
+    "mv_jepa_adaptive_edge_dropout": MethodSpec(
+        "mv_jepa_adaptive_edge_dropout",
+        "finetune_mv.py",
+        (
+            "--mv_jepa",
+            "--predictors",
+            "1",
+            "--lambda_base",
+            "1.0",
+            "--edge_dropout",
+            "adaptive",
+        ),
+    ),
 }
 
 

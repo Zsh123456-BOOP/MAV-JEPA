@@ -44,6 +44,7 @@ def main() -> None:
         writer = csv.DictWriter(handle, fieldnames=RESULT_COLUMNS)
         writer.writeheader()
         writer.writerows(rows)
+    write_ablation_outputs(Path(args.outputs_dir), rows)
     print(f"Wrote {len(rows)} rows to {output_csv}")
 
 
@@ -111,6 +112,126 @@ def csv_value(value: Any) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     return str(value)
+
+
+ABLATION_MAP = {
+    "sft_lora": "A0",
+    "original_llm_jepa_lora": "A1",
+    "mv_jepa_fixed_lambda": "A2",
+    "mv_jepa_adaptive_lambda": "A3",
+    "mv_jepa_adaptive_edge_dropout": "A4",
+    "mav_jepa_full": "A5",
+}
+
+ABLATION_LABELS = {
+    "A0": "SFT + LoRA",
+    "A1": "Original LLM-JEPA + LoRA",
+    "A2": "MV-JEPA fixed lambda, no adaptive dropout",
+    "A3": "MV-JEPA + adaptive lambda only",
+    "A4": "MV-JEPA + adaptive edge dropout only",
+    "A5": "MAV-JEPA full",
+}
+
+
+def write_ablation_outputs(outputs_dir: Path, rows: list[dict[str, str]]) -> None:
+    aggregate_dir = outputs_dir / "aggregate"
+    aggregate_dir.mkdir(parents=True, exist_ok=True)
+    ablation_rows = []
+    for row in rows:
+        ablation = ABLATION_MAP.get(row.get("method"))
+        if not ablation or row.get("task") not in {"gsm8k", "spider"}:
+            continue
+        ablation_rows.append(
+            {
+                "ablation": ablation,
+                "description": ABLATION_LABELS[ablation],
+                "task": row["task"],
+                "method": row["method"],
+                "run_name": row["run_name"],
+                "exact_match": row["exact_match"],
+                "exec_acc": row["exec_acc"],
+                "train_loss": row["train_loss"],
+                "jepa_loss": row["jepa_loss"],
+                "flops": row["flops"],
+                "wall_clock_sec": row["wall_clock_sec"],
+            }
+        )
+    ablation_rows.sort(key=lambda item: (item["task"], item["ablation"], item["run_name"]))
+    csv_path = aggregate_dir / "ablation.csv"
+    columns = [
+        "ablation",
+        "description",
+        "task",
+        "method",
+        "run_name",
+        "exact_match",
+        "exec_acc",
+        "train_loss",
+        "jepa_loss",
+        "flops",
+        "wall_clock_sec",
+    ]
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns)
+        writer.writeheader()
+        writer.writerows(ablation_rows)
+    (aggregate_dir / "ablation.md").write_text(build_ablation_report(ablation_rows), encoding="utf-8")
+
+
+def build_ablation_report(rows: list[dict[str, str]]) -> str:
+    lines = [
+        "# MAV-JEPA Ablation Smoke Report",
+        "",
+        "This report is generated from available GSM8K and Spider runs. Quality metrics remain `null` until prediction files are generated; current comparisons use smoke-run training loss and compute fields only.",
+        "",
+        "## Runs",
+        "",
+        "| Task | Ablation | Method | Train loss | JEPA loss | FLOPs | Wall clock sec | Exact match | Exec acc |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['task']} | {row['ablation']} | {row['method']} | {row['train_loss']} | {row['jepa_loss']} | {row['flops']} | {row['wall_clock_sec']} | {row['exact_match']} | {row['exec_acc']} |"
+        )
+    lines.extend(["", "## Required Questions", ""])
+    lines.append(question_answer(rows, "Does multi-view help over original two-view JEPA?", "A1", "A2"))
+    lines.append(question_answer(rows, "Does adaptive lambda reduce tuning sensitivity?", "A2", "A3"))
+    lines.append(question_answer(rows, "Does adaptive edge dropout beat random dropout at similar compute?", "A1", "A4"))
+    lines.append(edge_answer(rows))
+    lines.append("")
+    return "\n".join(lines)
+
+
+def question_answer(rows: list[dict[str, str]], question: str, left: str, right: str) -> str:
+    comparisons = []
+    for task in sorted({row["task"] for row in rows}):
+        left_row = first_ablation(rows, task, left)
+        right_row = first_ablation(rows, task, right)
+        if not left_row or not right_row:
+            comparisons.append(f"{task}: missing {left} or {right}")
+            continue
+        comparisons.append(
+            f"{task}: {left} train_loss={left_row['train_loss']}, {right} train_loss={right_row['train_loss']}, quality metrics={right_row['exact_match']}"
+        )
+    return f"1. {question} {'; '.join(comparisons) if comparisons else 'No matching runs yet.'}"
+
+
+def edge_answer(rows: list[dict[str, str]]) -> str:
+    present = sorted({row["method"] for row in rows if row["ablation"] in {"A2", "A3", "A4", "A5"}})
+    if not present:
+        return "1. Which view edges are useful or harmful? No multi-view ablation runs are available yet."
+    return (
+        "1. Which view edges are useful or harmful? Current smoke runs exercise the configured GSM8K and Spider edges, "
+        "but edge-removal ablations are optional and have not been run; use per-run `metrics.jsonl` edge frequencies for diagnostics. "
+        f"Available multi-view methods: {', '.join(present)}."
+    )
+
+
+def first_ablation(rows: list[dict[str, str]], task: str, ablation: str) -> dict[str, str] | None:
+    for row in rows:
+        if row["task"] == task and row["ablation"] == ablation:
+            return row
+    return None
 
 
 if __name__ == "__main__":
