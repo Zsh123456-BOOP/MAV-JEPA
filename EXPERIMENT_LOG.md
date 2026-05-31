@@ -73,3 +73,11 @@ Server: `10.154.22.11`, commit `31dfed4`, conda env `mav-jepa`.
 - `pytest tests/test_loss_shapes.py tests/test_adaptive_lambda.py -q`: 7 passed.
 - `python -m py_compile mavjepa/trainer_mv.py finetune_mv.py`: passed.
 - Adaptive lambda is wired to `--adaptive_lambda`; default fixed `lambda_base` behavior remains unchanged when the flag is absent.
+
+## Task 05 acceptance
+
+Server: `10.154.22.11`, commit `d3a7e62`, conda env `mav-jepa`.
+
+- `pytest tests/test_edge_sampler.py -q`: 7 passed.
+- `pytest tests/test_edge_sampler.py tests/test_adaptive_lambda.py tests/test_loss_shapes.py -q`: 14 passed.
+- Edge sampler supports `none`, `random`, and `adaptive`; adaptive probabilities use EMA loss and edge quality, respect `edge_budget`, keep nonzero probability for low-score edges, and skip temporarily blacklisted repeatedly non-finite edges.
