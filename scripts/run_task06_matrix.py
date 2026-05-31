@@ -246,6 +246,11 @@ def run_one(
     preset = "smoke" if args.smoke else "full"
     run_name = f"{run['task']}_{method.name}_seed{run['seed']}_lr{lr_tag}_r{run['lora_rank']}_{preset}"
     out_dir = Path(args.outputs_dir) / "runs" / run_name
+    command = build_command(args, torchrun, model_path, out_dir, run, method)
+    if args.dry_run:
+        print(" ".join(command))
+        return
+
     if out_dir.exists() and args.overwrite:
         shutil.rmtree(out_dir)
     if (out_dir / "results.json").exists() and not args.overwrite:
@@ -257,11 +262,7 @@ def run_one(
 
     config = build_run_config(args, run, method, run_name, out_dir, model_path, model_meta)
     write_json(out_dir / "run_config.json", config)
-    command = build_command(args, torchrun, model_path, out_dir, run, method)
     write_json(out_dir / "command.json", {"command": command})
-    if args.dry_run:
-        print(" ".join(command))
-        return
 
     print(f"Starting {run_name}")
     env = os.environ.copy()
