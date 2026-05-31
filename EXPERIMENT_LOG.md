@@ -64,3 +64,12 @@ Server: `10.154.22.11`, commit `6fff1c4`, conda env `mav-jepa`, `CUDA_VISIBLE_DE
 - Smoke metrics: `train_steps=64`, `train_loss=1.1943`, `ce_loss=0.4977`, `jepa_loss=0.6967`, `wall_clock_sec=21.9263`, `gpu_hours=0.006091`, `peak_vram_gb=8.3506`, `avg_steps_per_sec=2.9189`, `avg_tokens_per_sec=997.7974`, `estimated_total_flops=205012304117760`, `jepa_edges_per_step=1.0`.
 - Edge sampling frequency: `Q_to_R=25`, `Q_to_A=22`, `R_to_A=17`.
 - Model source: ModelScope snapshot `/home/zsh/.cache/modelscope/hub/models/Qwen/Qwen2___5-1___5B-Instruct`; no fallback was needed for this run.
+
+## Task 04 acceptance
+
+Server: `10.154.22.11`, commit `31dfed4`, conda env `mav-jepa`.
+
+- `pytest tests/test_adaptive_lambda.py -q`: 4 passed.
+- `pytest tests/test_loss_shapes.py tests/test_adaptive_lambda.py -q`: 7 passed.
+- `python -m py_compile mavjepa/trainer_mv.py finetune_mv.py`: passed.
+- Adaptive lambda is wired to `--adaptive_lambda`; default fixed `lambda_base` behavior remains unchanged when the flag is absent.
