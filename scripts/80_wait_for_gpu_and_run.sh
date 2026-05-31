@@ -17,6 +17,22 @@ GPU_IDS="${GPU_IDS:-0 1 2 3}"
 GPU_MAX_USED_MIB="${GPU_MAX_USED_MIB:-1024}"
 GPU_MAX_UTIL="${GPU_MAX_UTIL:-5}"
 POLL_INTERVAL_SEC="${POLL_INTERVAL_SEC:-300}"
+CONDA_ENV="${MAV_JEPA_CONDA_ENV:-mav-jepa}"
+CONDA_BIN="${CONDA_BIN:-${HOME}/anaconda3/bin/conda}"
+
+PYTHON_CMD=()
+if [[ -n "${PYTHON_BIN:-}" ]]; then
+  PYTHON_CMD=("$PYTHON_BIN")
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_CMD=("$(command -v python3)")
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_CMD=("$(command -v python)")
+elif [[ -x "$CONDA_BIN" ]]; then
+  PYTHON_CMD=("$CONDA_BIN" run -n "$CONDA_ENV" python)
+else
+  echo "Cannot find python/python3 or conda Python for GPU polling." >&2
+  exit 1
+fi
 
 exec > >(tee -a "$LOG_FILE") 2>&1
 exec 9>"$LOCK_FILE"
@@ -42,7 +58,7 @@ echo "$(date -Is) command: $*"
 
 while true; do
   selected_gpu="$(
-    python - "$GPU_IDS" "$GPU_MAX_USED_MIB" "$GPU_MAX_UTIL" <<'PY'
+    "${PYTHON_CMD[@]}" - "$GPU_IDS" "$GPU_MAX_USED_MIB" "$GPU_MAX_UTIL" <<'PY'
 import subprocess
 import sys
 
