@@ -11,6 +11,7 @@ from typing import Any
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+from .adaptive_lambda import AdaptiveLambda
 from .edge_sampler import EdgeSampler
 from .logging_utils import append_jsonl
 from .losses import jepa_loss, last_token_hidden
@@ -82,6 +83,13 @@ class MultiViewTrainer:
         self.logger = logger
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.sampler = EdgeSampler(args.edge_dropout, args.edge_budget, args.edge_p_min, seed=args.finetune_seed)
+        self.lambda_controller = AdaptiveLambda(
+            lambda_base=args.lambda_base,
+            lambda_min=args.lambda_min,
+            lambda_max=args.lambda_max,
+            beta=args.lambda_ema_beta,
+            warmup_steps=args.lambda_warmup_steps,
+        )
         self.edge_counts: Counter[str] = Counter()
         self.view_config = load_view_config(args.view_config)
         self.config_edges = {edge["name"]: edge for edge in self.view_config.get("edges", [])}
@@ -203,7 +211,7 @@ class MultiViewTrainer:
             "jepa_edges_per_step": selected_edges_total / max(1, steps),
             "jepa_edges_used_per_step": used_edges_total / max(1, steps),
             "edge_sampling_frequency": dict(self.edge_counts),
-            "lambda_history": None,
+            "lambda_history": self.lambda_controller.state_dict() if self.args.adaptive_lambda else None,
             "same_flop_accuracy": None,
             "eval_file": eval_file,
         }
@@ -215,6 +223,7 @@ class MultiViewTrainer:
         edge_log = []
         selected_count = 0
         view_tokens = 0
+        raw_losses_by_edge: dict[str, list[float]] = defaultdict(list)
         for views, edges in zip(batch["views"], batch["edges"]):
             candidate_edges = self.candidate_edges(views, edges)
             selected, probs = self.sampler.sample(candidate_edges)
@@ -228,12 +237,17 @@ class MultiViewTrainer:
                 tgt_hidden, tgt_tokens = self.encode_view(tgt_text, view_name=edge["tgt"], predictors=0)
                 view_tokens += src_tokens + tgt_tokens
                 raw_loss = jepa_loss(src_hidden, tgt_hidden, self.args.mv_loss_type, self.args.detach_target)
-                lam = float(self.args.lambda_base)
+                edge_name = edge["name"]
+                lam = (
+                    self.lambda_controller.lambda_for(edge_name)
+                    if self.args.adaptive_lambda
+                    else float(self.args.lambda_base)
+                )
                 weighted = raw_loss * lam
                 losses.append(weighted)
-                edge_name = edge["name"]
                 self.edge_counts[edge_name] += 1
                 self.sampler.update_loss(edge_name, float(raw_loss.detach().cpu()))
+                raw_losses_by_edge[edge_name].append(float(raw_loss.detach().cpu()))
                 edge_log.append(
                     {
                         "name": edge_name,
@@ -243,6 +257,10 @@ class MultiViewTrainer:
                         "prob": probs.get(edge_name),
                     }
                 )
+        if raw_losses_by_edge and self.args.adaptive_lambda:
+            self.lambda_controller.update_many(
+                {name: sum(values) / len(values) for name, values in raw_losses_by_edge.items()}
+            )
         if not losses:
             return next(self.model.parameters()).new_tensor(0.0), edge_log, selected_count, 0, view_tokens
         return torch.stack(losses).sum(), edge_log, selected_count, len(losses), view_tokens
