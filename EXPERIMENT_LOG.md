@@ -41,3 +41,14 @@ Server: `10.154.22.11`, commit `b0b2a6e`, conda env `mav-jepa`, `CUDA_VISIBLE_DE
 - `data/debug/gsm8k_64_train.jsonl` and `data/debug/gsm8k_64_test.jsonl` created with 64 records each.
 - `outputs/smoke/original_sft`: success, finite loss, 1 checkpoint, `wall_clock_sec=33`, `gpu_hours=0.009167`, `peak_vram_gb=6.137`.
 - `outputs/smoke/original_jepa`: success, finite loss, 1 checkpoint, `train.log` contains `llm_loss` and `jepa_loss`, `wall_clock_sec=305`, `gpu_hours=0.084722`, `peak_vram_gb=8.355`.
+
+## Task 02 acceptance
+
+Server: `10.154.22.11`, commit `b0a09a0`, conda env `mav-jepa`.
+
+- `pytest tests/test_view_builders.py -q`: 5 passed.
+- `data/mv/gsm8k/train.jsonl`: 7473 kept, 0 skipped.
+- `data/mv/gsm8k/eval.jsonl`: 1319 kept, 0 skipped.
+- `data/mv/spider/train.jsonl`: 6587 kept, 0 skipped, 6587 missing DB.
+- `data/mv/spider/eval.jsonl`: 1447 kept, 0 skipped, 1447 missing DB.
+- Spider SQLite execution views were skipped because upstream `spider_data.zip` is an unavailable LFS pointer; `QS -> SQL`, `Q -> SQL`, and `Q -> S` views/edges were generated.
