@@ -102,3 +102,13 @@ Server: `10.154.22.11`, commit `51443a6`, conda env `mav-jepa`.
 - `python scripts/60_evaluate_all.py --outputs_dir outputs --tasks gsm8k spider`: evaluated 13 runs and wrote `outputs/aggregate/evaluation_report.json`.
 - `python scripts/70_aggregate_results.py --outputs_dir outputs --output_csv outputs/aggregate/results.csv`: wrote 13 result rows plus header.
 - Evaluation handles missing prediction files by writing explicit `null` metrics instead of failing; GSM8K numeric normalization and Spider SQL normalization/code-fence stripping are implemented.
+
+## Task 08 acceptance
+
+Server: `10.154.22.11`, current code commit `2f5f26d`, conda env `mav-jepa`, `CUDA_VISIBLE_DEVICES=2`.
+
+- Reused Task 06 smoke runs for A0, A1, A2, and A5.
+- Ran missing A3/A4 smoke ablations for GSM8K and Spider on GPU 2: `mv_jepa_adaptive_lambda` and `mv_jepa_adaptive_edge_dropout`; all 4 wrote `run_status.json` with `status=success`.
+- `outputs/aggregate/ablation.csv`: 12 ablation rows plus header, covering A0-A5 for both GSM8K and Spider.
+- `outputs/aggregate/ablation.md`: generated and answers the required questions using available smoke-run loss/compute proxies; quality metrics remain `null` until prediction files are generated.
+- Optional A6/A7/A8 rank, edge-removal, and same-FLOP sweeps were not launched, per priority constraints.
