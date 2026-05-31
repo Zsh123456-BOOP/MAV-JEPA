@@ -93,3 +93,12 @@ Server: `10.154.22.11`, commit `501058c`, conda env `mav-jepa`, `CUDA_VISIBLE_DE
 - `outputs/aggregate/results.csv`: 13 result rows plus header. The required columns are present: `run_name, task, model, method, seed, lora_rank, lr, accuracy, exact_match, exec_acc, train_loss, jepa_loss, flops, wall_clock_sec, trainable_params`.
 - Representative wall-clock seconds: GSM8K SFT 34.32, GSM8K original JEPA 43.40, GSM8K MAV-JEPA full 24.32, Spider SFT 32.30, Spider original JEPA 47.91, Spider MAV-JEPA full 19.96.
 - This is the Task 06 smoke matrix with `seed=0`, `lr=2e-5`, `lora_rank=16`, and 64 train/eval samples per task. Larger multi-seed/rank sweeps are intentionally not launched yet while validating the one-card workflow.
+
+## Task 07 acceptance
+
+Server: `10.154.22.11`, commit `51443a6`, conda env `mav-jepa`.
+
+- `pytest tests/test_metrics.py -q`: 4 passed.
+- `python scripts/60_evaluate_all.py --outputs_dir outputs --tasks gsm8k spider`: evaluated 13 runs and wrote `outputs/aggregate/evaluation_report.json`.
+- `python scripts/70_aggregate_results.py --outputs_dir outputs --output_csv outputs/aggregate/results.csv`: wrote 13 result rows plus header.
+- Evaluation handles missing prediction files by writing explicit `null` metrics instead of failing; GSM8K numeric normalization and Spider SQL normalization/code-fence stripping are implemented.
