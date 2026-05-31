@@ -6,11 +6,11 @@ Execution order follows `MAV_JEPA_Codex_Task_Card.md`: finish each task, run its
 
 ## Server Workflow
 
-Work locally first, commit each completed task, push the branch to the server-side Git remote, then run acceptance on the server:
+Work locally first, commit each completed task, push `master` to the project GitHub repository, then pull and run acceptance on the server:
 
 ```bash
-git push server mav-jepa
-ssh zsh@10.154.22.11 'cd /home/zsh/projects/MAV-JEPA/llm-jepa && git pull --ff-only origin mav-jepa'
+git push origin master
+ssh zsh@10.154.22.11 'cd /home/zsh/projects/MAV-JEPA/llm-jepa && git pull --ff-only origin master'
 ssh zsh@10.154.22.11 'cd /home/zsh/projects/MAV-JEPA/llm-jepa && CUDA_VISIBLE_DEVICES=0 /home/zsh/anaconda3/bin/conda run -n mav-jepa bash scripts/00_env_check.sh'
 ```
 
