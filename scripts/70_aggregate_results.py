@@ -25,7 +25,13 @@ RESULT_COLUMNS = [
     "jepa_loss",
     "flops",
     "wall_clock_sec",
+    "gpu_hours",
+    "train_wall_clock_sec",
+    "train_gpu_hours",
+    "peak_vram_gb",
     "trainable_params",
+    "status",
+    "resource_guard_reason",
 ]
 
 
@@ -80,7 +86,13 @@ def row_for_run(path: Path) -> dict[str, str] | None:
         "jepa_loss": results.get("jepa_loss"),
         "flops": results.get("estimated_total_flops") or config.get("estimated_total_flops"),
         "wall_clock_sec": results.get("wall_clock_sec") or config.get("wall_clock_sec"),
+        "gpu_hours": results.get("gpu_hours") or config.get("gpu_hours"),
+        "train_wall_clock_sec": results.get("train_wall_clock_sec") or config.get("train_wall_clock_sec"),
+        "train_gpu_hours": results.get("train_gpu_hours") or config.get("train_gpu_hours"),
+        "peak_vram_gb": results.get("peak_vram_gb") or config.get("peak_vram_gb"),
         "trainable_params": results.get("trainable_params") or config.get("trainable_params"),
+        "status": results.get("status") or config.get("status"),
+        "resource_guard_reason": results.get("resource_guard_reason") or config.get("resource_guard_reason"),
     }
     return {key: csv_value(row.get(key)) for key in RESULT_COLUMNS}
 

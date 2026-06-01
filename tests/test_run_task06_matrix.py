@@ -74,3 +74,7 @@ def test_finalize_run_uses_outer_wall_clock_for_cost(tmp_path):
     assert results["gpu_hours"] == 45.0 / 3600
     assert results["train_wall_clock_sec"] == 12.5
     assert results["train_gpu_hours"] == 12.5 / 3600
+    run_config = json.loads((out_dir / "run_config.json").read_text(encoding="utf-8"))
+    assert run_config["wall_clock_sec"] == 45.0
+    assert run_config["train_wall_clock_sec"] == 12.5
+    assert run_config["resource_guard_reason"] is None

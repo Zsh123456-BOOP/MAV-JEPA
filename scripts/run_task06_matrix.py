@@ -502,8 +502,13 @@ def finalize_run(
             "end_time": datetime.now(timezone.utc).isoformat(),
             "wall_clock_sec": results["wall_clock_sec"],
             "gpu_hours": results["gpu_hours"],
+            "train_wall_clock_sec": results.get("train_wall_clock_sec"),
+            "train_gpu_hours": results.get("train_gpu_hours"),
             "peak_vram_gb": results["peak_vram_gb"],
             "trainable_params": results.get("trainable_params"),
+            "status": status,
+            "exit_code": exit_code,
+            "resource_guard_reason": resource_reason,
         }
     )
     write_json(out_dir / "run_config.json", merged_config)
