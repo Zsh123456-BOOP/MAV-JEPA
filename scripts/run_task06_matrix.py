@@ -190,6 +190,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--grad_accum", type=int, default=4)
     parser.add_argument("--edge_budget", type=int, default=1)
     parser.add_argument("--gpu_index", default=os.environ.get("GPU_INDEX", "0"))
+    parser.add_argument(
+        "--master_port",
+        type=int,
+        help="Explicit torchrun rendezvous port. Overrides --master_port_base.",
+    )
+    parser.add_argument(
+        "--master_port_base",
+        type=int,
+        default=29600,
+        help="Base torchrun port; physical GPU index is added for single-card runs.",
+    )
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--dry_run", action="store_true")
     parser.add_argument("--limit", type=int)
@@ -310,6 +321,8 @@ def build_command(
     base = [
         torchrun,
         "--nproc_per_node=1",
+        "--master_port",
+        str(resolve_master_port(args)),
         method.script,
         "--train_file",
         run["train_file"],
@@ -391,6 +404,7 @@ def build_run_config(
         "grad_accum": args.grad_accum,
         "edge_budget": args.edge_budget if method.script != "finetune.py" else None,
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", args.gpu_index),
+        "torchrun_master_port": resolve_master_port(args),
         "start_time": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -474,6 +488,17 @@ def read_json(path: Path) -> dict[str, Any]:
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def resolve_master_port(args: argparse.Namespace) -> int:
+    if args.master_port is not None:
+        return int(args.master_port)
+    first_gpu = str(args.gpu_index).split(",", 1)[0].strip()
+    try:
+        offset = int(first_gpu)
+    except ValueError:
+        offset = 0
+    return int(args.master_port_base) + offset
 
 
 def git_commit() -> str:
