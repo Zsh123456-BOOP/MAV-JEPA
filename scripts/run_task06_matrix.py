@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import re
+import signal
 import shutil
 import subprocess
 import sys
@@ -202,9 +203,27 @@ def parse_args() -> argparse.Namespace:
         help="Base torchrun port; physical GPU index is added for single-card runs.",
     )
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument(
+        "--allow_resume_partial",
+        action="store_true",
+        help="Reuse an existing non-success output directory instead of archiving it before rerun.",
+    )
     parser.add_argument("--dry_run", action="store_true")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--track_flop_original", action="store_true")
+    parser.add_argument(
+        "--max_process_rss_gb",
+        type=float,
+        default=64.0,
+        help="Kill a run if the torchrun process tree exceeds this resident-memory limit. Use <=0 to disable.",
+    )
+    parser.add_argument(
+        "--max_system_memory_pct",
+        type=float,
+        default=90.0,
+        help="Kill a run if host memory usage exceeds this percentage. Use <=0 to disable.",
+    )
+    parser.add_argument("--monitor_interval_sec", type=float, default=5.0)
     return parser.parse_args()
 
 
@@ -287,6 +306,9 @@ def run_one(
         if existing.get("status") == "success":
             print(f"Skipping completed run {run_name}")
             return
+    if out_dir.exists() and any(out_dir.iterdir()) and not args.overwrite and not args.allow_resume_partial:
+        archived = archive_partial_run(out_dir)
+        print(f"Archived incomplete/non-success run {run_name} -> {archived}")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     config = build_run_config(args, run, method, run_name, out_dir, model_path, model_meta)
@@ -305,11 +327,31 @@ def run_one(
     start = time.time()
     monitor = GpuMemoryMonitor(args.gpu_index)
     monitor.start()
+    resource_reason = None
     with (out_dir / "train.log").open("w", encoding="utf-8") as log:
-        process = subprocess.run(command, cwd=repo_root, env=env, stdout=log, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(
+            command,
+            cwd=repo_root,
+            env=env,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            start_new_session=(os.name != "nt"),
+        )
+        while process.poll() is None:
+            time.sleep(max(1.0, args.monitor_interval_sec))
+            resource_reason = check_resource_limits(process.pid, args)
+            if resource_reason:
+                log.write(f"\nRESOURCE_GUARD: {resource_reason}\n")
+                log.flush()
+                terminate_process_tree(process)
+                break
+        if process.poll() is None:
+            process.wait()
     monitor.stop()
     wall = time.time() - start
-    finalize_run(out_dir, config, process.returncode, wall, monitor.peak_gb())
+    finalize_run(out_dir, config, process.returncode, wall, monitor.peak_gb(), resource_reason=resource_reason)
+    if resource_reason:
+        raise SystemExit(f"{run_name} stopped by resource guard: {resource_reason}; see {out_dir / 'train.log'}")
     if process.returncode != 0:
         raise SystemExit(f"{run_name} failed with exit code {process.returncode}; see {out_dir / 'train.log'}")
     print(f"Completed {run_name}: {wall:.1f}s")
@@ -414,15 +456,27 @@ def build_run_config(
     }
 
 
-def finalize_run(out_dir: Path, config: dict[str, Any], exit_code: int, wall: float, peak_vram_gb: float | None) -> None:
+def finalize_run(
+    out_dir: Path,
+    config: dict[str, Any],
+    exit_code: int,
+    wall: float,
+    peak_vram_gb: float | None,
+    resource_reason: str | None = None,
+) -> None:
     existing_results = read_json(out_dir / "results.json")
     log_text = (out_dir / "train.log").read_text(encoding="utf-8", errors="replace")
     parsed = parse_training_log(log_text)
-    status = "success" if exit_code == 0 and existing_results.get("status", "success") == "success" else "failed"
+    status = (
+        "success"
+        if exit_code == 0 and resource_reason is None and existing_results.get("status", "success") == "success"
+        else "failed"
+    )
     results = {
         **existing_results,
         "status": status,
         "exit_code": exit_code,
+        "resource_guard_reason": resource_reason,
         "wall_clock_sec": existing_results.get("wall_clock_sec", wall),
         "gpu_hours": existing_results.get("gpu_hours", wall / 3600),
         "peak_vram_gb": existing_results.get("peak_vram_gb", peak_vram_gb),
@@ -449,7 +503,7 @@ def finalize_run(out_dir: Path, config: dict[str, Any], exit_code: int, wall: fl
         }
     )
     write_json(out_dir / "run_config.json", merged_config)
-    write_json(out_dir / "run_status.json", {"status": status, "exit_code": exit_code})
+    write_json(out_dir / "run_status.json", {"status": status, "exit_code": exit_code, "resource_guard_reason": resource_reason})
 
     metrics_path = out_dir / "metrics.jsonl"
     if not metrics_path.exists():
@@ -493,6 +547,110 @@ def read_json(path: Path) -> dict[str, Any]:
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def archive_partial_run(out_dir: Path) -> Path:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    archived = out_dir.with_name(f"{out_dir.name}.interrupted-{stamp}")
+    suffix = 1
+    while archived.exists():
+        archived = out_dir.with_name(f"{out_dir.name}.interrupted-{stamp}-{suffix}")
+        suffix += 1
+    shutil.move(str(out_dir), str(archived))
+    return archived
+
+
+def check_resource_limits(root_pid: int, args: argparse.Namespace) -> str | None:
+    rss_gb = process_tree_rss_gb(root_pid)
+    if args.max_process_rss_gb > 0 and rss_gb is not None and rss_gb > args.max_process_rss_gb:
+        return f"process_tree_rss_gb={rss_gb:.2f} exceeded limit {args.max_process_rss_gb:.2f}"
+    used_pct = system_memory_used_pct()
+    if args.max_system_memory_pct > 0 and used_pct is not None and used_pct > args.max_system_memory_pct:
+        return f"system_memory_used_pct={used_pct:.2f} exceeded limit {args.max_system_memory_pct:.2f}"
+    return None
+
+
+def process_tree_rss_gb(root_pid: int) -> float | None:
+    if os.name == "nt" or not Path("/proc").exists():
+        return None
+    total_kb = 0
+    for pid in process_tree_pids(root_pid):
+        status_path = Path("/proc") / str(pid) / "status"
+        try:
+            for line in status_path.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.startswith("VmRSS:"):
+                    total_kb += int(line.split()[1])
+                    break
+        except Exception:
+            continue
+    return total_kb / (1024 * 1024)
+
+
+def process_tree_pids(root_pid: int) -> set[int]:
+    pids = {root_pid}
+    changed = True
+    while changed:
+        changed = False
+        for proc_dir in Path("/proc").iterdir():
+            if not proc_dir.name.isdigit():
+                continue
+            pid = int(proc_dir.name)
+            if pid in pids:
+                continue
+            try:
+                status = (proc_dir / "status").read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                continue
+            ppid = None
+            for line in status.splitlines():
+                if line.startswith("PPid:"):
+                    ppid = int(line.split()[1])
+                    break
+            if ppid in pids:
+                pids.add(pid)
+                changed = True
+    return pids
+
+
+def system_memory_used_pct() -> float | None:
+    meminfo = Path("/proc/meminfo")
+    if not meminfo.exists():
+        return None
+    values = {}
+    try:
+        for line in meminfo.read_text(encoding="utf-8").splitlines():
+            key, rest = line.split(":", 1)
+            values[key] = int(rest.split()[0])
+    except Exception:
+        return None
+    total = values.get("MemTotal")
+    available = values.get("MemAvailable")
+    if not total or available is None:
+        return None
+    return 100.0 * (1.0 - available / total)
+
+
+def terminate_process_tree(process: subprocess.Popen[Any]) -> None:
+    if process.poll() is not None:
+        return
+    try:
+        if os.name != "nt":
+            os.killpg(process.pid, signal.SIGTERM)
+        else:
+            process.terminate()
+    except Exception:
+        process.terminate()
+    try:
+        process.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        try:
+            if os.name != "nt":
+                os.killpg(process.pid, signal.SIGKILL)
+            else:
+                process.kill()
+        except Exception:
+            process.kill()
+        process.wait(timeout=30)
 
 
 def resolve_master_port(args: argparse.Namespace) -> int:
