@@ -39,8 +39,14 @@ SWEEP_MAX_PROCESS_RSS_GB="${SWEEP_MAX_PROCESS_RSS_GB:-64}"
 SWEEP_MAX_SYSTEM_MEMORY_PCT="${SWEEP_MAX_SYSTEM_MEMORY_PCT:-90}"
 RUN_BASELINES="${RUN_BASELINES:-0}"
 RUN_MAV="${RUN_MAV:-1}"
+RUN_GENERATE="${RUN_GENERATE:-1}"
 RUN_EVAL="${RUN_EVAL:-1}"
 RUN_PLOTS="${RUN_PLOTS:-1}"
+GENERATION_BATCH_SIZE="${GENERATION_BATCH_SIZE:-1}"
+GENERATION_MAX_PROMPT_LENGTH="${GENERATION_MAX_PROMPT_LENGTH:-1024}"
+GENERATION_GSM8K_MAX_NEW_TOKENS="${GENERATION_GSM8K_MAX_NEW_TOKENS:-192}"
+GENERATION_SPIDER_MAX_NEW_TOKENS="${GENERATION_SPIDER_MAX_NEW_TOKENS:-128}"
+GENERATION_OVERWRITE="${GENERATION_OVERWRITE:-0}"
 
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-4}"
 export MKL_NUM_THREADS="${MKL_NUM_THREADS:-4}"
@@ -99,6 +105,25 @@ fi
 
 if [[ "$RUN_MAV" == "1" ]]; then
   "$PYTHON_BIN" scripts/run_task06_matrix.py --kind mav "${common_args[@]}"
+fi
+
+if [[ "$RUN_GENERATE" == "1" ]]; then
+  generation_args=(
+    --outputs_dir "$SWEEP_OUTPUTS_DIR"
+    --tasks gsm8k spider
+    --batch_size "$GENERATION_BATCH_SIZE"
+    --max_prompt_length "$GENERATION_MAX_PROMPT_LENGTH"
+    --gsm8k_max_new_tokens "$GENERATION_GSM8K_MAX_NEW_TOKENS"
+    --spider_max_new_tokens "$GENERATION_SPIDER_MAX_NEW_TOKENS"
+    --evaluate
+  )
+  if [[ -n "${GENERATION_LIMIT:-}" ]]; then
+    generation_args+=(--limit "$GENERATION_LIMIT")
+  fi
+  if [[ "$GENERATION_OVERWRITE" == "1" ]]; then
+    generation_args+=(--overwrite)
+  fi
+  "$PYTHON_BIN" scripts/55_generate_predictions.py "${generation_args[@]}"
 fi
 
 if [[ "$RUN_EVAL" == "1" ]]; then

@@ -29,8 +29,13 @@ RESULT_COLUMNS = [
     "train_wall_clock_sec",
     "train_gpu_hours",
     "peak_vram_gb",
+    "generation_wall_clock_sec",
+    "generation_gpu_hours",
+    "generation_peak_vram_gb",
+    "generation_num_examples",
     "trainable_params",
     "status",
+    "eval_status",
     "resource_guard_reason",
 ]
 
@@ -90,8 +95,13 @@ def row_for_run(path: Path) -> dict[str, str] | None:
         "train_wall_clock_sec": results.get("train_wall_clock_sec") or config.get("train_wall_clock_sec"),
         "train_gpu_hours": results.get("train_gpu_hours") or config.get("train_gpu_hours"),
         "peak_vram_gb": results.get("peak_vram_gb") or config.get("peak_vram_gb"),
+        "generation_wall_clock_sec": results.get("generation_wall_clock_sec") or config.get("generation_wall_clock_sec"),
+        "generation_gpu_hours": results.get("generation_gpu_hours") or config.get("generation_gpu_hours"),
+        "generation_peak_vram_gb": results.get("generation_peak_vram_gb") or config.get("generation_peak_vram_gb"),
+        "generation_num_examples": results.get("generation_num_examples") or config.get("generation_num_examples"),
         "trainable_params": results.get("trainable_params") or config.get("trainable_params"),
         "status": results.get("status") or config.get("status"),
+        "eval_status": results.get("eval_status") or config.get("eval_status"),
         "resource_guard_reason": results.get("resource_guard_reason") or config.get("resource_guard_reason"),
     }
     return {key: csv_value(row.get(key)) for key in RESULT_COLUMNS}

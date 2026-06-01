@@ -12,6 +12,11 @@ def test_gsm8k_numeric_exact_match():
     assert scores["numeric_exact_match"] is True
 
 
+def test_gsm8k_uses_last_number_when_no_marker():
+    scores = gsm8k_scores("There are 16 eggs, 7 used, so 9 remain and 18 dollars.", "#### 18")
+    assert scores["numeric_exact_match"] is True
+
+
 def test_spider_sql_normalization_and_fence_strip():
     assert strip_sql_markdown("```sql\nSELECT * FROM t;\n```") == "SELECT * FROM t;"
     assert normalize_sql("SELECT  *\nFROM t;") == "select * from t"

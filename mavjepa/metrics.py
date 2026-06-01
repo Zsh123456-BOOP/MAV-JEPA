@@ -38,7 +38,14 @@ def extract_final_answer(text: str | None) -> str:
     answer = str(text).strip()
     if "####" in answer:
         answer = answer.rsplit("####", 1)[-1].strip()
-    answer = re.sub(r"^answer\s*:\s*", "", answer, flags=re.IGNORECASE).strip()
+    else:
+        stripped = re.sub(r"^answer\s*:\s*", "", answer, flags=re.IGNORECASE).strip()
+        if stripped != answer:
+            answer = stripped
+        else:
+            matches = NUMBER_RE.findall(answer)
+            if matches:
+                answer = matches[-1]
     return answer.rstrip(".").strip()
 
 
