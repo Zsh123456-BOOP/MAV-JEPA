@@ -241,17 +241,25 @@ def load_model_and_tokenizer(
 
 
 def locate_model_artifact(run_dir: Path) -> tuple[str, Path]:
-    candidates = [run_dir / "checkpoint-final", run_dir]
+    final_dir = run_dir / "checkpoint-final"
+    if (final_dir / "adapter_config.json").exists():
+        return "adapter", final_dir
+    if (final_dir / "config.json").exists() and has_model_weights(final_dir):
+        return "full", final_dir
+
+    if (run_dir / "config.json").exists() and has_model_weights(run_dir):
+        return "full", run_dir
+    if (run_dir / "adapter_config.json").exists():
+        return "adapter", run_dir
+
     checkpoints = sorted(
         [path for path in run_dir.glob("checkpoint-*") if path.is_dir()],
         key=lambda path: path.stat().st_mtime,
         reverse=True,
     )
-    candidates.extend(checkpoints)
-    for candidate in candidates:
+    for candidate in checkpoints:
         if (candidate / "adapter_config.json").exists():
             return "adapter", candidate
-    for candidate in candidates:
         if (candidate / "config.json").exists() and has_model_weights(candidate):
             return "full", candidate
     raise FileNotFoundError(f"No adapter or full-model checkpoint found under {run_dir}")

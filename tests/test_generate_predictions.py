@@ -27,6 +27,21 @@ def test_locate_model_artifact_prefers_checkpoint_final_adapter(tmp_path):
     assert path == adapter_dir
 
 
+def test_locate_model_artifact_prefers_final_full_model_over_step_adapter(tmp_path):
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    (run_dir / "config.json").write_text("{}", encoding="utf-8")
+    (run_dir / "model.safetensors").write_text("", encoding="utf-8")
+    step_dir = run_dir / "checkpoint-16"
+    step_dir.mkdir()
+    (step_dir / "adapter_config.json").write_text("{}", encoding="utf-8")
+
+    kind, path = generate_predictions.locate_model_artifact(run_dir)
+
+    assert kind == "full"
+    assert path == run_dir
+
+
 def test_prompt_from_record_uses_system_and_user_only():
     record = {
         "messages": [
