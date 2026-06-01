@@ -9,7 +9,6 @@ import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.profiler import profile, ProfilerActivity
 import json
 from datasets import load_dataset
 import shutil
@@ -760,6 +759,7 @@ class ProfilerFLOPCallback(TrainerCallback):
         self.grad_accum = grad_accum
         self.total_params = None
         self.warned_estimate = False
+        self.warned_profiler_import = False
         self.use_torch_profiler = os.environ.get("MAV_JEPA_USE_TORCH_PROFILER", "0") == "1"
         self.use_cuda_activity = os.environ.get("MAV_JEPA_PROFILE_CUDA", "0") == "1"
 
@@ -780,6 +780,14 @@ class ProfilerFLOPCallback(TrainerCallback):
         if not self.use_torch_profiler:
             return
         if state.global_step < self.profile_steps:
+            try:
+                from torch.profiler import ProfilerActivity, profile
+            except Exception as exc:
+                if torch.cuda.current_device() == 0 and not self.warned_profiler_import:
+                    print(f"torch.profiler is unavailable; falling back to FLOP estimate: {exc!r}")
+                    self.warned_profiler_import = True
+                self.use_torch_profiler = False
+                return
             activities = [ProfilerActivity.CPU]
             if self.use_cuda_activity and torch.cuda.is_available():
                 activities.append(ProfilerActivity.CUDA)

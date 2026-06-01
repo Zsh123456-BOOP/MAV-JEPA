@@ -1,5 +1,6 @@
 from argparse import Namespace
 import importlib.util
+import json
 from pathlib import Path
 import sys
 
@@ -53,3 +54,23 @@ def test_build_command_passes_master_port_to_torchrun(tmp_path):
     command = run_task06_matrix.build_command(args, "torchrun", "model-path", tmp_path, run, method)
 
     assert command[:4] == ["torchrun", "--nproc_per_node=1", "--master_port", "29603"]
+
+
+def test_finalize_run_uses_outer_wall_clock_for_cost(tmp_path):
+    out_dir = tmp_path / "run"
+    out_dir.mkdir()
+    (out_dir / "train.log").write_text("", encoding="utf-8")
+    (out_dir / "run_config.json").write_text("{}", encoding="utf-8")
+    (out_dir / "results.json").write_text(
+        json.dumps({"status": "success", "wall_clock_sec": 12.5, "gpu_hours": 12.5 / 3600}),
+        encoding="utf-8",
+    )
+    config = {"run_id": "r", "task": "gsm8k", "method": "m", "learning_rate": 2e-5}
+
+    run_task06_matrix.finalize_run(out_dir, config, exit_code=0, wall=45.0, peak_vram_gb=3.2)
+
+    results = json.loads((out_dir / "results.json").read_text(encoding="utf-8"))
+    assert results["wall_clock_sec"] == 45.0
+    assert results["gpu_hours"] == 45.0 / 3600
+    assert results["train_wall_clock_sec"] == 12.5
+    assert results["train_gpu_hours"] == 12.5 / 3600

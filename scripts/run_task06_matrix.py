@@ -467,6 +467,8 @@ def finalize_run(
     existing_results = read_json(out_dir / "results.json")
     log_text = (out_dir / "train.log").read_text(encoding="utf-8", errors="replace")
     parsed = parse_training_log(log_text)
+    train_wall = existing_results.get("train_wall_clock_sec", existing_results.get("wall_clock_sec"))
+    train_gpu_hours = existing_results.get("train_gpu_hours", existing_results.get("gpu_hours"))
     status = (
         "success"
         if exit_code == 0 and resource_reason is None and existing_results.get("status", "success") == "success"
@@ -477,8 +479,10 @@ def finalize_run(
         "status": status,
         "exit_code": exit_code,
         "resource_guard_reason": resource_reason,
-        "wall_clock_sec": existing_results.get("wall_clock_sec", wall),
-        "gpu_hours": existing_results.get("gpu_hours", wall / 3600),
+        "wall_clock_sec": wall,
+        "gpu_hours": wall / 3600,
+        "train_wall_clock_sec": train_wall,
+        "train_gpu_hours": train_gpu_hours,
         "peak_vram_gb": existing_results.get("peak_vram_gb", peak_vram_gb),
         "train_loss": existing_results.get("train_loss", parsed.get("train_loss")),
         "jepa_loss": existing_results.get("jepa_loss", parsed.get("jepa_loss")),
