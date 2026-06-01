@@ -19,7 +19,19 @@ from .losses import jepa_loss, last_token_hidden
 
 class MVJEPADataset(Dataset):
     def __init__(self, jsonl_path: str | Path, tokenizer: Any, max_length: int, view_max_length: int, model_name: str):
-        self.records = [json.loads(line) for line in Path(jsonl_path).read_text(encoding="utf-8").splitlines() if line]
+        self.records = []
+        with Path(jsonl_path).open("r", encoding="utf-8") as handle:
+            for line_no, line in enumerate(handle, 1):
+                if not line.strip():
+                    continue
+                try:
+                    self.records.append(json.loads(line))
+                except json.JSONDecodeError as exc:
+                    raise json.JSONDecodeError(
+                        f"{exc.msg} in {jsonl_path} at physical line {line_no}",
+                        exc.doc,
+                        exc.pos,
+                    ) from exc
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.view_max_length = view_max_length
