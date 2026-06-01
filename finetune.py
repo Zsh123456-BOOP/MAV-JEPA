@@ -751,25 +751,58 @@ class RepresentationTrainer(Trainer):
 
 
 class ProfilerFLOPCallback(TrainerCallback):
-    def __init__(self, profile_steps=10):
+    def __init__(self, profile_steps=10, max_length=None, batch_size=1, grad_accum=1):
         self.profile_steps = profile_steps
         self.total_flops = 0
         self.profiler = None
+        self.max_length = max_length
+        self.batch_size = batch_size
+        self.grad_accum = grad_accum
+        self.total_params = None
+        self.warned_estimate = False
+        self.use_torch_profiler = os.environ.get("MAV_JEPA_USE_TORCH_PROFILER", "0") == "1"
         self.use_cuda_activity = os.environ.get("MAV_JEPA_PROFILE_CUDA", "0") == "1"
+
+    def on_train_begin(self, args, state, control, model=None, **kwargs):
+        if model is None:
+            return
+        try:
+            self.total_params = sum(param.numel() for param in model.parameters())
+        except Exception:
+            self.total_params = None
+
+    def estimate_step_flops(self):
+        if self.total_params is None or self.max_length is None:
+            return 0
+        return int(6 * self.total_params * self.max_length * self.batch_size * self.grad_accum)
         
     def on_step_begin(self, args, state, control, **kwargs):
+        if not self.use_torch_profiler:
+            return
         if state.global_step < self.profile_steps:
             activities = [ProfilerActivity.CPU]
             if self.use_cuda_activity and torch.cuda.is_available():
                 activities.append(ProfilerActivity.CUDA)
             self.profiler = profile(
                 activities=activities,
-                record_shapes=True,
-                with_flops=True  # This enables FLOP counting if available
+                record_shapes=False,
+                profile_memory=False,
+                with_stack=False,
+                with_flops=True,
             )
             self.profiler.__enter__()
     
     def on_step_end(self, args, state, control, **kwargs):
+        if not self.use_torch_profiler:
+            step_flops = self.estimate_step_flops()
+            self.total_flops += step_flops
+            if torch.cuda.current_device() == 0 and not self.warned_estimate:
+                print(
+                    "FLOP tracking uses a lightweight estimate; set "
+                    "MAV_JEPA_USE_TORCH_PROFILER=1 to enable torch.profiler."
+                )
+                self.warned_estimate = True
+            return
         if state.global_step < self.profile_steps and self.profiler is not None:
             self.profiler.__exit__(None, None, None)
             
@@ -1020,7 +1053,11 @@ def main():
         data_seed=args.finetune_seed,
     )
     
-    flop_callback = ProfilerFLOPCallback()
+    flop_callback = ProfilerFLOPCallback(
+        max_length=args.max_length,
+        batch_size=args.batch_size,
+        grad_accum=args.grad_accum,
+    )
 
     # Initialize trainer
     if args.regular:
