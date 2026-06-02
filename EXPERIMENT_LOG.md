@@ -121,3 +121,15 @@ Server: `10.154.22.11`, commit `0bcbe02`, conda env `mav-jepa`.
 - Generated figures: `loss_curves_gsm8k.png`, `loss_curves_spider.png`, `edge_sampling_gsm8k.png`, `edge_sampling_spider.png`, `lambda_dynamics_gsm8k.png`, `lambda_dynamics_spider.png`, `compute_vs_score.png`.
 - Generated analysis artifacts: `outputs/analysis/view_edge_table.md` and `outputs/analysis/error_cases.jsonl`.
 - Current artifacts are smoke-run diagnostics; qualitative error cases remain empty until prediction/generation files are produced.
+
+## R2 GSM8K rationale-span diagnostic
+
+Server: `10.154.22.11`, commit `056d587`, output dir `outputs/r2_gsm8k_20260602T0856Z_056d587_stage1`.
+
+- `mav_rspan_qrpre_rsuf_p125_l003 seed0` completed full GSM8K evaluation: accuracy `0.479909`, exact match `0.476118`, 1319 eval examples, train wall `1713.563s`, generation wall `4017.326s`.
+- Comparable SFT baselines from `outputs/revised_gsm8k_20260602T0208Z_safe_jepa`: seed0 accuracy `0.486732`, exact `0.482942`; seed1 accuracy `0.473844`, exact `0.470811`.
+- Continuation gate failed: rationale-span R2 does not beat SFT seed0 and does not justify automatic seed expansion.
+- 256-example R2 probes: `mav_qr_p125_l003_cap003 seed0` accuracy `0.484375`, exact `0.476563`; `mav_qr_p125_l003_cap003_nostrip seed0` accuracy `0.500000`, exact `0.500000`; `mav_qr_rspan_prior_p125_l003 seed0` accuracy `0.472656`, exact `0.457031`.
+- Decision: do not launch new R2 expansion jobs from this state. The no-strip result suggests `strip_answer_from_reasoning` may damage the R view, but this is diagnostic rather than a confirmed full-eval positive result.
+
+See `docs/experiments/r2_gsm8k_20260602_rspan/README.md`.

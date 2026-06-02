@@ -32,6 +32,8 @@ https://github.com/Zsh123456-BOOP/MAV-JEPA
 - `docs/experiments/revised_gsm8k_20260602_safe_jepa/aggregate/results.csv`
 - `docs/experiments/revised_gsm8k_20260602_safe_jepa/runs/*/results.json`
 - `docs/experiments/revised_gsm8k_20260602_safe_jepa/runs/*/metrics_sample.jsonl`
+- `docs/experiments/r2_gsm8k_20260602_rspan/README.md`
+- `docs/experiments/r2_gsm8k_20260602_rspan/aggregate/results.csv`
 
 当前实验结果：
 
@@ -44,6 +46,17 @@ https://github.com/Zsh123456-BOOP/MAV-JEPA
 | `mav_qra_safe_all_p25_l005` | 0 | 0.4647 | 多边 safe-all 明显偏低 |
 | `mav_qa_only_p25_l005` | 0 | 0.4769 | Q->A 单边没有正向收益 |
 | `mav_qr_normmse_p25_l005` | 0 | 0.4602 | normalized MSE 版本较差 |
+
+R2 追加实验结果：
+
+| Method | Seed | Eval examples | Accuracy | Exact match | 说明 |
+|---|---:|---:|---:|---:|---|
+| `mav_rspan_qrpre_rsuf_p125_l003` | 0 | 1319 | 0.4799 | 0.4761 | rationale-span full eval 未超过 SFT seed0，也没有形成清晰正收益 |
+| `mav_qr_p125_l003_cap003` | 0 | 256 | 0.4844 | 0.4766 | 保守 `Q_to_R` control，只是 256 条评估，未形成优势 |
+| `mav_qr_p125_l003_cap003_nostrip` | 0 | 256 | 0.5000 | 0.5000 | 不移除 reasoning 中答案后的 Q->R 诊断，明显高于 strip 版本，提示 `strip_answer_from_reasoning` 可能破坏 R 视图 |
+| `mav_qr_rspan_prior_p125_l003` | 0 | 256 | 0.4727 | 0.4570 | `Q_to_R + QR_PRE->R_SUF` 双边 prior 更差且更慢 |
+
+R2 结论：当前 `QR_PRE -> R_SUF` 设计比直接 answer target 更安全，但 full eval 没有达标；双边 prior 也没有改善。`nostrip` 256 条诊断提示 view construction 可能有问题，但还不是 full eval 正结果。请把这视为“当前多边/多视图目标仍存在结构性设计问题”，而不是简单补 seed 即可解决。
 
 我需要你完成以下任务：
 
