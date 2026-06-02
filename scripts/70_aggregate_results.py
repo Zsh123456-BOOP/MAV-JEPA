@@ -56,6 +56,7 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(rows)
     write_ablation_outputs(Path(args.outputs_dir), rows)
+    write_summary_by_method(Path(args.outputs_dir), rows)
     if args.make_plots:
         make_plots(Path(args.outputs_dir), rows)
     print(f"Wrote {len(rows)} rows to {output_csv}")
@@ -309,6 +310,65 @@ def csv_value(value: Any) -> str:
     return str(value)
 
 
+def write_summary_by_method(outputs_dir: Path, rows: list[dict[str, str]]) -> None:
+    aggregate_dir = outputs_dir / "aggregate"
+    aggregate_dir.mkdir(parents=True, exist_ok=True)
+    groups: dict[tuple[str, str], list[dict[str, str]]] = {}
+    for row in rows:
+        method = row.get("method")
+        task = row.get("task")
+        if not method or not task:
+            continue
+        groups.setdefault((task, method), []).append(row)
+    columns = [
+        "task",
+        "method",
+        "seeds",
+        "runs",
+        "accuracy_mean",
+        "accuracy_std",
+        "exact_match_mean",
+        "train_wall_clock_mean",
+        "flops_mean",
+    ]
+    out_rows = []
+    for (task, method), group in sorted(groups.items()):
+        seeds = sorted({row.get("seed", "null") for row in group})
+        out_rows.append(
+            {
+                "task": task,
+                "method": method,
+                "seeds": " ".join(seeds),
+                "runs": len(group),
+                "accuracy_mean": mean_str(parse_float(row.get("accuracy")) for row in group),
+                "accuracy_std": std_str(parse_float(row.get("accuracy")) for row in group),
+                "exact_match_mean": mean_str(parse_float(row.get("exact_match")) for row in group),
+                "train_wall_clock_mean": mean_str(parse_float(row.get("train_wall_clock_sec")) for row in group),
+                "flops_mean": mean_str(parse_float(row.get("flops")) for row in group),
+            }
+        )
+    with (aggregate_dir / "summary_by_method.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns)
+        writer.writeheader()
+        writer.writerows(out_rows)
+
+
+def mean_str(values: Any) -> str:
+    nums = [value for value in values if value is not None]
+    if not nums:
+        return "null"
+    return str(sum(nums) / len(nums))
+
+
+def std_str(values: Any) -> str:
+    nums = [value for value in values if value is not None]
+    if len(nums) < 2:
+        return "0.0" if nums else "null"
+    mean = sum(nums) / len(nums)
+    variance = sum((value - mean) ** 2 for value in nums) / (len(nums) - 1)
+    return str(variance**0.5)
+
+
 ABLATION_MAP = {
     "sft_lora": "A0",
     "original_llm_jepa_lora": "A1",
@@ -324,6 +384,11 @@ ABLATION_MAP = {
     "mav_qra_safe_all_p25_l005": "A11",
     "mav_qa_only_p25_l005": "A12",
     "mav_ra_only_p25_l005": "A13",
+    "mav_qr_p125_l003_cap003": "A14",
+    "mav_qr_p125_l003_cap003_nostrip": "A15",
+    "mav_rspan_qrpre_rsuf_p125_l003": "A16",
+    "mav_qr_rspan_prior_p125_l003": "A17",
+    "mav_qr_rspan_answerweak_p125_l003": "A18",
 }
 
 ABLATION_LABELS = {
@@ -341,6 +406,11 @@ ABLATION_LABELS = {
     "A11": "Safe all-edge Q/R/A stop-grad, p=0.25, lambda=0.05",
     "A12": "Q->A answer-target diagnostic, p=0.25, lambda=0.05",
     "A13": "R->A answer-target diagnostic, p=0.25, lambda=0.05",
+    "A14": "R2 Q->R prior, p=0.125, lambda=0.03, cap=0.03",
+    "A15": "R2 Q->R prior without reasoning strip, p=0.125, lambda=0.03, cap=0.03",
+    "A16": "R2 rationale span QR_PRE->R_SUF, p=0.125, lambda=0.03",
+    "A17": "R2 Q->R plus rationale span prior, p=0.125, lambda=0.03",
+    "A18": "R2 Q->R plus rationale span plus weak answer statement, p=0.125, lambda=0.03",
 }
 
 

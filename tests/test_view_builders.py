@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from mavjepa.view_builders import GSM8KViewBuilder, SpiderViewBuilder, split_gsm8k_answer
+from mavjepa.view_builders import GSM8KViewBuilder, SpiderViewBuilder, split_gsm8k_answer, split_rationale_span
 from mavjepa.view_schema import validate_mv_record
 
 
@@ -33,7 +33,32 @@ def test_gsm8k_builder_record_valid():
     assert ok, errors
     assert record["views"]["Q"] == "What is 2+2?"
     assert record["views"]["A"] == "4"
-    assert {edge["name"] for edge in record["edges"]} == {"Q_to_R", "R_to_A", "Q_to_A"}
+    assert {"Q_to_R", "R_to_A", "Q_to_A", "QR_to_A_STMT"}.issubset(
+        {edge["name"] for edge in record["edges"]}
+    )
+
+
+def test_gsm8k_builder_adds_rationale_span_views_for_long_reasoning():
+    reasoning = " ".join(f"step{i}" for i in range(80))
+    raw = {
+        "messages": [
+            {"role": "system", "content": "Answer the math question, show steps."},
+            {"role": "user", "content": "What is the total?"},
+            {"role": "assistant", "content": f"{reasoning}\n#### 42"},
+        ]
+    }
+    builder = GSM8KViewBuilder(split="train")
+    record = builder.build_record(raw, 0)
+
+    assert {"R_PRE", "R_SUF", "QR_PRE", "QR", "A_STMT"}.issubset(record["views"])
+    assert "QRPRE_to_RSUF" in {edge["name"] for edge in record["edges"]}
+
+
+def test_rationale_span_split_requires_usable_suffix():
+    prefix, suffix = split_rationale_span("short reasoning", min_suffix_tokens=16)
+
+    assert prefix == ""
+    assert suffix == ""
 
 
 def test_spider_missing_db_skips_result_edge(tmp_path: Path):

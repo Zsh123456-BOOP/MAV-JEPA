@@ -1,0 +1,44 @@
+task: gsm8k
+views:
+  Q:
+    max_length: 256
+  R:
+    max_length: 384
+  R_PRE:
+    max_length: 256
+  R_SUF:
+    max_length: 192
+  QR_PRE:
+    max_length: 512
+  QR:
+    max_length: 512
+  A_STMT:
+    max_length: 64
+edges:
+  - name: Q_to_R
+    src: Q
+    tgt: R
+    quality: 1.0
+    prior: 0.45
+    lambda: 0.03
+    min_target_tokens: 32
+    target_pooling: mean_last_k
+  - name: QRPRE_to_RSUF
+    src: QR_PRE
+    tgt: R_SUF
+    quality: 1.0
+    prior: 0.55
+    lambda: 0.03
+    min_target_tokens: 16
+    target_pooling: mean
+  - name: QR_to_A_STMT
+    src: QR
+    tgt: A_STMT
+    quality: 0.3
+    prior: 0.05
+    lambda: 0.005
+    min_target_tokens: 4
+    target_pooling: mean
+    weak_only: true
+    start_step: 3000
+default_edge_budget: 1

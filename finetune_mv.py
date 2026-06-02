@@ -94,7 +94,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lambda_mode", choices=["fixed", "current_adaptive", "inverse_loss"], default="fixed")
     parser.add_argument("--lambda_ema_beta", type=float, default=0.95)
     parser.add_argument("--lambda_warmup_steps", type=int, default=50)
-    parser.add_argument("--edge_dropout", default="none", choices=["none", "random", "adaptive"])
+    parser.add_argument("--edge_dropout", default="none", choices=["none", "random", "adaptive", "prior"])
     parser.add_argument("--edge_budget", type=int, default=1)
     parser.add_argument("--edge_p_min", type=float, default=0.05)
     parser.add_argument("--target_compute_ratio", type=float, default=1.25)

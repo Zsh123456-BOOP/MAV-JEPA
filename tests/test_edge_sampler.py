@@ -51,6 +51,20 @@ def test_adaptive_sampler_prefers_high_loss_high_quality_edges():
     assert probs["quality"] > probs["low"]
 
 
+def test_prior_sampler_uses_edge_prior_not_loss():
+    sampler = EdgeSampler(mode="prior", edge_budget=1, p_min=0.0)
+    sampler.update_loss("low", 100.0)
+    edges = [
+        {"name": "low", "src": "Q", "tgt": "R", "quality": 1.0, "prior": 0.1},
+        {"name": "high", "src": "QR_PRE", "tgt": "R_SUF", "quality": 1.0, "prior": 0.9},
+    ]
+
+    probs = sampler.probabilities(edges)
+
+    assert math.isclose(probs["low"], 0.1)
+    assert math.isclose(probs["high"], 0.9)
+
+
 def test_zero_or_nan_scores_fallback_to_uniform():
     sampler = EdgeSampler(mode="adaptive", edge_budget=1, p_min=0.0)
     sampler.ema_loss = {"low": float("nan"), "high": float("nan"), "quality": float("nan")}

@@ -107,6 +107,8 @@ class MultiViewTrainer:
             warmup_steps=args.lambda_warmup_steps,
         )
         self.edge_counts: Counter[str] = Counter()
+        self.filtered_edge_counts: Counter[str] = Counter()
+        self.sampled_edge_counts: Counter[str] = Counter()
         self.view_config = load_view_config(args.view_config)
         self.config_edges = {edge["name"]: edge for edge in self.view_config.get("edges", [])}
         self.view_max_lengths = {
@@ -142,6 +144,9 @@ class MultiViewTrainer:
         estimated_total_flops = 0
         selected_edges_total = 0
         used_edges_total = 0
+        filtered_edges_total = 0
+        candidates_before_total = 0
+        candidates_after_total = 0
         optimizer.zero_grad(set_to_none=True)
 
         for epoch in range(self.args.num_epochs):
@@ -171,6 +176,9 @@ class MultiViewTrainer:
                 view_tokens += batch_view_tokens
                 selected_edges_total += selected_count
                 used_edges_total += used_count
+                filtered_edges_total += int(self.last_mv_loss_info.get("filtered_edges_step", 0) or 0)
+                candidates_before_total += int(self.last_mv_loss_info.get("candidate_edges_before_filter", 0) or 0)
+                candidates_after_total += int(self.last_mv_loss_info.get("candidate_edges_after_filter", 0) or 0)
                 step_flops = estimate_step_flops(self.total_params, batch_tokens + batch_view_tokens, self.args.track_flop)
                 if step_flops is not None:
                     estimated_total_flops += step_flops
@@ -194,6 +202,10 @@ class MultiViewTrainer:
                     "total_loss": float(total_loss.detach().cpu()),
                     "learning_rate": self.args.learning_rate,
                     "active_edges": [item["name"] for item in edge_log],
+                    "candidate_edges_before_filter": self.last_mv_loss_info.get("candidate_edges_before_filter"),
+                    "candidate_edges_after_filter": self.last_mv_loss_info.get("candidate_edges_after_filter"),
+                    "filtered_edge_counts": dict(self.filtered_edge_counts),
+                    "filtered_edges_step": self.last_mv_loss_info.get("filtered_edges_step"),
                     "loss_by_edge": {item["name"]: item["raw_loss"] for item in edge_log},
                     "lambda_by_edge": {item["name"]: item["lambda"] for item in edge_log},
                     "weighted_loss_by_edge": {item["name"]: item["weighted_loss"] for item in edge_log},
@@ -202,6 +214,7 @@ class MultiViewTrainer:
                     "gpu_memory_gb": current_gpu_memory_gb(),
                     "mv_edges_selected": selected_count,
                     "mv_edges_used": used_count,
+                    "mv_edges_filtered": self.last_mv_loss_info.get("filtered_edges_step"),
                     "tokens": batch_tokens,
                     "view_tokens": batch_view_tokens,
                     "estimated_step_flops": step_flops,
@@ -241,8 +254,14 @@ class MultiViewTrainer:
             "view_tokens": view_tokens,
             "estimated_total_flops": estimated_total_flops if self.args.track_flop else None,
             "jepa_edges_per_step": selected_edges_total / max(1, steps),
+            "jepa_edges_sampled_per_step": selected_edges_total / max(1, steps),
             "jepa_edges_used_per_step": used_edges_total / max(1, steps),
+            "jepa_edges_filtered_per_step": filtered_edges_total / max(1, steps),
+            "jepa_candidate_edges_before_filter_per_step": candidates_before_total / max(1, steps),
+            "jepa_candidate_edges_after_filter_per_step": candidates_after_total / max(1, steps),
             "edge_sampling_frequency": dict(self.edge_counts),
+            "edge_sampled_frequency": dict(self.sampled_edge_counts),
+            "filtered_edge_counts": dict(self.filtered_edge_counts),
             "lambda_history": self.lambda_controller.state_dict()
             if self.lambda_mode in {"current_adaptive", "inverse_loss"}
             else None,
@@ -277,41 +296,45 @@ class MultiViewTrainer:
         losses = []
         edge_log = []
         selected_count = 0
+        candidate_before_count = 0
+        candidate_after_count = 0
+        filtered_count_start = sum(self.filtered_edge_counts.values())
         view_tokens = 0
         raw_losses_by_edge: dict[str, list[float]] = defaultdict(list)
         for views, edges in zip(batch["views"], batch["edges"]):
-            candidate_edges = self.candidate_edges(views, edges)
+            candidate_edges = self.candidate_edges(views, edges, step=step)
+            candidate_before_count += self.last_mv_loss_info.get("candidate_edges_before_filter", 0) or 0
+            candidate_after_count += len(candidate_edges)
             selected, probs = self.sampler.sample(candidate_edges)
             selected_count += len(selected)
             for edge in selected:
+                self.sampled_edge_counts[edge["name"]] += 1
                 src_text = self.prepare_view_text(edge["src"], views.get(edge["src"]))
                 tgt_text = self.prepare_view_text(edge["tgt"], views.get(edge["tgt"]))
                 if not src_text or not tgt_text:
                     continue
-                min_target_tokens = int(getattr(self.args, "min_target_tokens", 0) or 0)
-                if edge.get("tgt") == "A" and min_target_tokens > 0:
-                    estimated_target_tokens = self.count_view_tokens(tgt_text, view_name=edge["tgt"])
-                    if estimated_target_tokens < min_target_tokens:
-                        continue
                 src_hidden, src_tokens = self.encode_view(
                     src_text,
                     view_name=edge["src"],
                     predictors=self.args.predictors,
                     grad=True,
-                    pooling=getattr(self.args, "pooling", "last"),
+                    pooling=edge.get("source_pooling", edge.get("pooling", getattr(self.args, "pooling", "last"))),
                 )
                 tgt_hidden, tgt_tokens = self.encode_view(
                     tgt_text,
                     view_name=edge["tgt"],
                     predictors=0,
                     grad=not getattr(self.args, "target_no_grad", False),
-                    pooling=getattr(self.args, "target_pooling", "last"),
+                    pooling=edge.get("target_pooling", getattr(self.args, "target_pooling", "last")),
                 )
                 view_tokens += src_tokens + tgt_tokens
                 raw_loss = jepa_loss(src_hidden, tgt_hidden, self.args.mv_loss_type, self.args.detach_target)
                 edge_name = edge["name"]
-                lam = self.lambda_for_edge(edge_name)
+                lam = self.lambda_for_edge(edge)
                 weighted = raw_loss * lam
+                ratio_cap = edge_ratio_cap(edge, getattr(self.args, "jepa_ce_ratio_cap", 0.0))
+                if ratio_cap > 0.0:
+                    weighted = torch.minimum(weighted, ratio_cap * ce_loss.detach())
                 losses.append(weighted)
                 self.edge_counts[edge_name] += 1
                 self.sampler.update_loss(edge_name, float(raw_loss.detach().cpu()))
@@ -322,9 +345,11 @@ class MultiViewTrainer:
                         "raw_loss": float(raw_loss.detach().cpu()),
                         "lambda": lam,
                         "weighted_loss": float(weighted.detach().cpu()),
+                        "ce_ratio_cap": ratio_cap,
                         "prob": probs.get(edge_name),
                     }
                 )
+        filtered_edges_step = sum(self.filtered_edge_counts.values()) - filtered_count_start
         if raw_losses_by_edge and self.lambda_mode in {"current_adaptive", "inverse_loss"}:
             self.lambda_controller.update_many(
                 {name: sum(values) / len(values) for name, values in raw_losses_by_edge.items()}
@@ -336,6 +361,13 @@ class MultiViewTrainer:
                 step=step,
                 warmup=warmup,
                 step_prob=step_prob,
+            )
+            self.last_mv_loss_info.update(
+                {
+                    "candidate_edges_before_filter": candidate_before_count,
+                    "candidate_edges_after_filter": candidate_after_count,
+                    "filtered_edges_step": filtered_edges_step,
+                }
             )
             return zero, edge_log, selected_count, 0, view_tokens
 
@@ -357,10 +389,13 @@ class MultiViewTrainer:
             "skipped": False,
             "skip_reason": None,
             "ce_ratio_cap_value": cap_value,
+            "candidate_edges_before_filter": candidate_before_count,
+            "candidate_edges_after_filter": candidate_after_count,
+            "filtered_edges_step": filtered_edges_step,
         }
         return mv_loss, edge_log, selected_count, len(losses), view_tokens
 
-    def candidate_edges(self, views: dict[str, str], edges: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def candidate_edges(self, views: dict[str, str], edges: list[dict[str, Any]], step: int | None = None) -> list[dict[str, Any]]:
         if not self.config_edges:
             candidates = list(edges)
         else:
@@ -374,11 +409,54 @@ class MultiViewTrainer:
                     candidates.append(edge)
         if self.allowed_edges is not None:
             candidates = [edge for edge in candidates if edge.get("name") in self.allowed_edges]
-        if getattr(self.args, "disable_answer_target_edges", False):
-            candidates = [edge for edge in candidates if edge.get("tgt") != "A"]
-        return candidates
+        before_filter = len(candidates)
+        filtered = self.apply_edge_filters_before_sampling(candidates, views, step=step)
+        self.last_mv_loss_info = {
+            **self.last_mv_loss_info,
+            "candidate_edges_before_filter": before_filter,
+            "candidate_edges_after_filter": len(filtered),
+        }
+        return filtered
 
-    def lambda_for_edge(self, edge_name: str) -> float:
+    def apply_edge_filters_before_sampling(
+        self,
+        candidates: list[dict[str, Any]],
+        views: dict[str, str],
+        step: int | None = None,
+    ) -> list[dict[str, Any]]:
+        filtered = []
+        for edge in candidates:
+            name = edge.get("name", "unknown")
+            src_name = edge.get("src")
+            tgt_name = edge.get("tgt")
+            if getattr(self.args, "disable_answer_target_edges", False) and tgt_name in {"A", "A_STMT"}:
+                self.filtered_edge_counts[f"{name}:answer_target_disabled"] += 1
+                continue
+            edge_start_step = int(edge.get("start_step", getattr(self.args, "jepa_start_step", 0)) or 0)
+            if step is not None and step < edge_start_step:
+                self.filtered_edge_counts[f"{name}:before_edge_start_step"] += 1
+                continue
+            src_text = self.prepare_view_text(src_name, views.get(src_name))
+            tgt_text = self.prepare_view_text(tgt_name, views.get(tgt_name))
+            if not src_text:
+                self.filtered_edge_counts[f"{name}:missing_source"] += 1
+                continue
+            if not tgt_text:
+                self.filtered_edge_counts[f"{name}:missing_target"] += 1
+                continue
+            min_target_tokens = int(edge.get("min_target_tokens", getattr(self.args, "min_target_tokens", 0)) or 0)
+            if min_target_tokens > 0:
+                estimated_target_tokens = self.count_view_tokens(tgt_text, view_name=tgt_name)
+                if estimated_target_tokens < min_target_tokens:
+                    self.filtered_edge_counts[f"{name}:short_target"] += 1
+                    continue
+            filtered.append(edge)
+        return filtered
+
+    def lambda_for_edge(self, edge: dict[str, Any]) -> float:
+        edge_name = edge["name"]
+        if "lambda" in edge:
+            return float(edge["lambda"])
         if self.lambda_mode == "current_adaptive":
             return self.lambda_controller.lambda_for(edge_name)
         if self.lambda_mode == "inverse_loss":
@@ -464,6 +542,14 @@ def parse_allowed_edges(value: str | None) -> set[str] | None:
         return None
     names = {part.strip() for part in value.split(",") if part.strip()}
     return names or None
+
+
+def edge_ratio_cap(edge: dict[str, Any], default: float) -> float:
+    value = edge.get("ce_ratio_cap", default)
+    try:
+        return max(0.0, float(value or 0.0))
+    except (TypeError, ValueError):
+        return max(0.0, float(default or 0.0))
 
 
 def strip_final_answer(text: str) -> str:

@@ -18,7 +18,7 @@ class EdgeSampler:
         nan_blacklist_threshold: int = 3,
         blacklist_steps: int = 50,
     ):
-        if mode not in {"none", "random", "adaptive"}:
+        if mode not in {"none", "random", "adaptive", "prior"}:
             raise ValueError(f"Unknown edge dropout mode: {mode}")
         self.mode = mode
         self.edge_budget = max(0, int(edge_budget))
@@ -36,6 +36,13 @@ class EdgeSampler:
         edges = self.active_edges(edges)
         if not edges:
             return {}
+        if self.mode == "prior":
+            scores = [safe_quality(edge.get("prior", edge.get("quality", 1.0))) for edge in edges]
+            total = sum(scores)
+            if total <= 0:
+                p = 1.0 / len(edges)
+                return {edge["name"]: p for edge in edges}
+            return {edge["name"]: score / total for edge, score in zip(edges, scores)}
         if self.mode != "adaptive":
             p = 1.0 / len(edges)
             return {edge["name"]: p for edge in edges}

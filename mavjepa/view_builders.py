@@ -90,6 +90,7 @@ class BaseViewBuilder:
 
 class GSM8KViewBuilder(BaseViewBuilder):
     task = "gsm8k"
+    min_r_suffix_tokens = 16
 
     def build_record(self, raw: dict[str, Any], index: int) -> dict[str, Any] | None:
         messages = normalize_messages(raw, task=self.task)
@@ -104,20 +105,35 @@ class GSM8KViewBuilder(BaseViewBuilder):
             self.stats.missing_answer += 1
             return None
         reasoning, answer, answer_quality = split_gsm8k_answer(assistant)
+        r_pre, r_suf = split_rationale_span(reasoning, tokenizer=self.tokenizer)
+        views = {
+            "Q": self.truncate(question, 2048),
+            "R": self.truncate(reasoning, 4096),
+            "A": self.truncate(answer, 512),
+            "QR": self.truncate(f"Question:\n{question}\n\nReasoning:\n{reasoning}", 4096),
+            "A_STMT": self.truncate(f"Final answer: {answer}", 512),
+        }
+        if r_pre and r_suf:
+            views.update(
+                {
+                    "R_PRE": self.truncate(r_pre, 3072),
+                    "R_SUF": self.truncate(r_suf, 2048),
+                    "QR_PRE": self.truncate(f"Question:\n{question}\n\nPartial reasoning:\n{r_pre}", 4096),
+                }
+            )
         edges = [
-            {"src": "Q", "tgt": "R", "name": "Q_to_R", "quality": 1.0},
+            {"src": "Q", "tgt": "R", "name": "Q_to_R", "quality": 1.0, "prior": 0.45},
             {"src": "R", "tgt": "A", "name": "R_to_A", "quality": answer_quality},
             {"src": "Q", "tgt": "A", "name": "Q_to_A", "quality": 0.7 if answer_quality >= 1.0 else 0.3},
+            {"src": "QR", "tgt": "A_STMT", "name": "QR_to_A_STMT", "quality": 0.3, "prior": 0.05, "weak_only": True},
         ]
+        if r_pre and r_suf and view_token_len(r_suf, self.tokenizer) >= self.min_r_suffix_tokens:
+            edges.append({"src": "QR_PRE", "tgt": "R_SUF", "name": "QRPRE_to_RSUF", "quality": 1.0, "prior": 0.55})
         record = {
             "id": f"gsm8k-{self.split}-{index:06d}",
             "task": self.task,
             "messages": messages,
-            "views": {
-                "Q": self.truncate(question, 2048),
-                "R": self.truncate(reasoning, 4096),
-                "A": self.truncate(answer, 512),
-            },
+            "views": views,
             "edges": edges,
             "meta": {"source": self.source, "split": self.split, "original_index": index},
         }
@@ -219,6 +235,45 @@ def split_gsm8k_answer(text: str) -> tuple[str, str, float]:
     if matches:
         return text.strip(), matches[-1].replace("$", ""), 0.7
     return text.strip(), text.strip(), 0.3
+
+
+def split_rationale_span(
+    reasoning: str,
+    tokenizer: Any | None = None,
+    prefix_ratio: float = 0.6,
+    min_suffix_tokens: int = 16,
+) -> tuple[str, str]:
+    text = reasoning.strip()
+    if not text:
+        return "", ""
+    if tokenizer is not None:
+        ids = list(tokenizer.encode(text, add_special_tokens=False))
+        if len(ids) < max(2, min_suffix_tokens * 2):
+            return "", ""
+        split_at = min(len(ids) - min_suffix_tokens, max(1, int(len(ids) * prefix_ratio)))
+        prefix = tokenizer.decode(ids[:split_at], skip_special_tokens=True).strip()
+        suffix = tokenizer.decode(ids[split_at:], skip_special_tokens=True).strip()
+        return prefix, suffix
+    parts = split_reasoning_sentences(text)
+    if len(parts) < 2:
+        words = text.split()
+        if len(words) < max(2, min_suffix_tokens * 2):
+            return "", ""
+        split_at = min(len(words) - min_suffix_tokens, max(1, int(len(words) * prefix_ratio)))
+        return " ".join(words[:split_at]).strip(), " ".join(words[split_at:]).strip()
+    split_at = min(len(parts) - 1, max(1, int(len(parts) * prefix_ratio)))
+    return " ".join(parts[:split_at]).strip(), " ".join(parts[split_at:]).strip()
+
+
+def split_reasoning_sentences(text: str) -> list[str]:
+    parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+|\n+", text) if part.strip()]
+    return parts
+
+
+def view_token_len(text: str, tokenizer: Any | None = None) -> int:
+    if tokenizer is not None:
+        return len(list(tokenizer.encode(text, add_special_tokens=False)))
+    return len(text.split())
 
 
 def parse_spider_user(user: str, raw: dict[str, Any]) -> tuple[str, str]:

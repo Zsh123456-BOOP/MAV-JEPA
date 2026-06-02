@@ -170,6 +170,8 @@ kind_for_method() {
     mv_sft_lora|mv_jepa_fixed_lambda|mav_jepa_full|mv_jepa_adaptive_lambda|mv_jepa_adaptive_edge_dropout) echo "mav" ;;
     mav_qr_stopgrad_p25_l005|mav_qr_stopgrad_p50_l005|mav_qr_normmse_p25_l005) echo "mav" ;;
     mav_qr_stopgrad_p125_l005|mav_qra_safe_all_p25_l005|mav_qa_only_p25_l005|mav_ra_only_p25_l005) echo "mav" ;;
+    mav_qr_p125_l003_cap003|mav_qr_p125_l003_cap003_nostrip) echo "mav" ;;
+    mav_rspan_qrpre_rsuf_p125_l003|mav_qr_rspan_prior_p125_l003|mav_qr_rspan_answerweak_p125_l003) echo "mav" ;;
     *) echo "Unknown method: $1" >&2; exit 2 ;;
   esac
 }

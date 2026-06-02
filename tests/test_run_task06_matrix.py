@@ -147,6 +147,42 @@ def test_qra_diagnostic_methods_encode_expected_edge_scope(tmp_path):
     assert qa_only[qa_only.index("--min_target_tokens") + 1] == "0"
 
 
+def test_r2_rspan_method_overrides_view_config_and_uses_prior_sampler(tmp_path):
+    args = Namespace(
+        master_port=None,
+        master_port_base=29600,
+        gpu_index="0",
+        max_length=512,
+        batch_size=1,
+        grad_accum=4,
+        epochs=2,
+        lora=True,
+        track_flop_original=False,
+        model="Qwen/Qwen2.5-1.5B-Instruct",
+        model_source="modelscope",
+        view_max_length=256,
+        edge_budget=1,
+    )
+    run = {
+        "train_file": "data/mv/gsm8k/train.jsonl",
+        "eval_file": "data/mv/gsm8k/eval.jsonl",
+        "learning_rate": "2e-5",
+        "lora_rank": 16,
+        "seed": 0,
+        "view_config": "configs/views/gsm8k_qra.yaml",
+    }
+    method = run_task06_matrix.MAV_METHODS["mav_qr_rspan_prior_p125_l003"]
+
+    command = run_task06_matrix.build_command(args, "torchrun", "model-path", tmp_path, run, method)
+
+    view_config_indices = [idx for idx, item in enumerate(command) if item == "--view_config"]
+    assert command[view_config_indices[-1] + 1] == "configs/views/gsm8k_rspan.yaml"
+    assert command[command.index("--allowed_edges") + 1] == "Q_to_R,QRPRE_to_RSUF"
+    assert command[command.index("--edge_dropout") + 1] == "prior"
+    assert command[command.index("--lambda_base") + 1] == "0.03"
+    assert command[command.index("--jepa_ce_ratio_cap") + 1] == "0.03"
+
+
 def test_finalize_run_uses_outer_wall_clock_for_cost(tmp_path):
     out_dir = tmp_path / "run"
     out_dir.mkdir()
