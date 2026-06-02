@@ -5,7 +5,7 @@
 仓库地址：
 
 ```text
-请粘贴 GitHub 仓库公开 URL
+https://github.com/Zsh123456-BOOP/MAV-JEPA
 ```
 
 背景：
