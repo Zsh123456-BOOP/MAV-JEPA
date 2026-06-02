@@ -48,6 +48,10 @@ def jepa_loss(
         target_hidden = target_hidden.detach()
     if loss_type == "cosine":
         return 1.0 - F.cosine_similarity(source_hidden, target_hidden, dim=-1).mean()
+    if loss_type == "safe_cosine":
+        source_hidden = F.normalize(source_hidden.float(), dim=-1, eps=1e-6)
+        target_hidden = F.normalize(target_hidden.float(), dim=-1, eps=1e-6)
+        return 1.0 - (source_hidden * target_hidden).sum(dim=-1).mean()
     if loss_type == "mse":
         return F.mse_loss(source_hidden, target_hidden)
     if loss_type == "normalized_mse":

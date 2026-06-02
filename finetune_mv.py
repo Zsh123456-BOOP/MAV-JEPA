@@ -98,7 +98,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--edge_budget", type=int, default=1)
     parser.add_argument("--edge_p_min", type=float, default=0.05)
     parser.add_argument("--target_compute_ratio", type=float, default=1.25)
-    parser.add_argument("--mv_loss_type", default="cosine", choices=["cosine", "mse", "normalized_mse", "l2"])
+    parser.add_argument("--mv_loss_type", default="cosine", choices=["cosine", "safe_cosine", "mse", "normalized_mse", "l2"])
     parser.add_argument("--detach_target", type=str_to_bool, default=True)
     parser.add_argument("--jepa_start_step", type=int, default=500)
     parser.add_argument("--jepa_warmup_steps", type=int, default=1000)
@@ -106,6 +106,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--jepa_step_schedule", choices=["constant", "linear_warmup"], default="constant")
     parser.add_argument("--jepa_ce_ratio_cap", type=float, default=0.05)
     parser.add_argument("--jepa_reduce", choices=["mean", "sum"], default="mean")
+    parser.add_argument("--weak_edge_step_prob", type=float, default=0.0)
+    parser.add_argument("--weak_edge_start_step", type=int, default=3000)
     parser.add_argument("--allowed_edges")
     parser.add_argument("--disable_answer_target_edges", action="store_true")
     parser.add_argument("--min_target_tokens", type=int, default=8)
@@ -186,6 +188,8 @@ def build_run_config(args: argparse.Namespace, requested_model: str, model_meta:
         "jepa_step_schedule": args.jepa_step_schedule,
         "jepa_ce_ratio_cap": args.jepa_ce_ratio_cap,
         "jepa_reduce": args.jepa_reduce,
+        "weak_edge_step_prob": args.weak_edge_step_prob,
+        "weak_edge_start_step": args.weak_edge_start_step,
         "allowed_edges": args.allowed_edges,
         "disable_answer_target_edges": args.disable_answer_target_edges,
         "min_target_tokens": args.min_target_tokens,

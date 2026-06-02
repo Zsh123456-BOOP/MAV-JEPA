@@ -1,7 +1,14 @@
 import json
 from pathlib import Path
 
-from mavjepa.view_builders import GSM8KViewBuilder, SpiderViewBuilder, split_gsm8k_answer, split_rationale_span
+from mavjepa.view_builders import (
+    GSM8KViewBuilder,
+    SpiderViewBuilder,
+    last_k_reasoning_sentences,
+    mask_final_answer,
+    split_gsm8k_answer,
+    split_rationale_span,
+)
 from mavjepa.view_schema import validate_mv_record
 
 
@@ -36,6 +43,7 @@ def test_gsm8k_builder_record_valid():
     assert {"Q_to_R", "R_to_A", "Q_to_A", "QR_to_A_STMT"}.issubset(
         {edge["name"] for edge in record["edges"]}
     )
+    assert {"R_FULL", "R_STRIP", "R_MASKANS", "R_LAST", "R_LAST_MASK", "QR_MASKANS"}.issubset(record["views"])
 
 
 def test_gsm8k_builder_adds_rationale_span_views_for_long_reasoning():
@@ -88,3 +96,34 @@ def test_prepare_shape_json_serializable():
     json.dumps(record)
     ok, errors = validate_mv_record(record)
     assert ok, errors
+
+
+def test_mask_final_answer_preserves_reasoning_structure():
+    text = "Then 20 + 22 = 42. Therefore, the answer is 42."
+
+    masked, stats = mask_final_answer(text, "42")
+
+    assert "Therefore" in masked
+    assert "<ANS>" in masked
+    assert "42" not in masked.split("Therefore")[-1]
+    assert stats["mask_replacements"] >= 1
+
+
+def test_r_last_mask_min_tokens():
+    reasoning = "We first compute the subtotal carefully. Then add the remaining values to get 42. Therefore, the answer is 42."
+    raw = {
+        "messages": [
+            {"role": "system", "content": "Answer the math question, show steps."},
+            {"role": "user", "content": "What is the total?"},
+            {"role": "assistant", "content": f"{reasoning}\n#### 42"},
+        ]
+    }
+    builder = GSM8KViewBuilder(split="train")
+    record = builder.build_record(raw, 0)
+
+    assert "Q_to_R_LAST_MASK" in {edge["name"] for edge in record["edges"]}
+    assert len(record["views"]["R_LAST_MASK"].split()) >= 8
+
+
+def test_last_k_reasoning_sentences_returns_tail():
+    assert last_k_reasoning_sentences("A first. B second. C third.", k=2) == "B second. C third."

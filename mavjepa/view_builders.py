@@ -15,6 +15,11 @@ from .view_schema import remove_empty_views_and_edges, validate_mv_record
 FINAL_MARKER = "####"
 LAST_NUMBER_RE = re.compile(r"[-+]?\$?\d[\d,]*(?:\.\d+)?")
 SPIDER_DB_RE = re.compile(r"db_id:\[([^\]]+)\]")
+FINAL_ANSWER_PATTERNS = [
+    r"\b[Tt]he answer is\b.*$",
+    r"\b[Ss]o the answer is\b.*$",
+    r"\b[Tt]herefore,? the answer is\b.*$",
+]
 
 
 @dataclass
@@ -106,11 +111,23 @@ class GSM8KViewBuilder(BaseViewBuilder):
             return None
         reasoning, answer, answer_quality = split_gsm8k_answer(assistant)
         r_pre, r_suf = split_rationale_span(reasoning, tokenizer=self.tokenizer)
+        r_full = reasoning.strip()
+        r_strip = strip_final_answer(r_full)
+        r_maskans, mask_stats = mask_final_answer(r_full, answer)
+        r_last = last_k_reasoning_sentences(r_full, k=2)
+        r_last_mask, last_mask_stats = mask_final_answer(r_last, answer)
+        qr_maskans = f"Question:\n{question}\n\nReasoning:\n{r_maskans}"
         views = {
             "Q": self.truncate(question, 2048),
             "R": self.truncate(reasoning, 4096),
             "A": self.truncate(answer, 512),
+            "R_FULL": self.truncate(r_full, 4096),
+            "R_STRIP": self.truncate(r_strip, 4096),
+            "R_MASKANS": self.truncate(r_maskans, 4096),
+            "R_LAST": self.truncate(r_last, 2048),
+            "R_LAST_MASK": self.truncate(r_last_mask, 2048),
             "QR": self.truncate(f"Question:\n{question}\n\nReasoning:\n{reasoning}", 4096),
+            "QR_MASKANS": self.truncate(qr_maskans, 4096),
             "A_STMT": self.truncate(f"Final answer: {answer}", 512),
         }
         if r_pre and r_suf:
@@ -126,6 +143,18 @@ class GSM8KViewBuilder(BaseViewBuilder):
             {"src": "R", "tgt": "A", "name": "R_to_A", "quality": answer_quality},
             {"src": "Q", "tgt": "A", "name": "Q_to_A", "quality": 0.7 if answer_quality >= 1.0 else 0.3},
             {"src": "QR", "tgt": "A_STMT", "name": "QR_to_A_STMT", "quality": 0.3, "prior": 0.05, "weak_only": True},
+            {"src": "Q", "tgt": "R_FULL", "name": "Q_to_R_FULL", "quality": 1.0, "prior": 1.0},
+            {"src": "Q", "tgt": "R_STRIP", "name": "Q_to_R_STRIP", "quality": 1.0, "prior": 1.0},
+            {"src": "Q", "tgt": "R_MASKANS", "name": "Q_to_R_MASKANS", "quality": 1.0, "prior": 1.0},
+            {"src": "Q", "tgt": "R_LAST_MASK", "name": "Q_to_R_LAST_MASK", "quality": 1.0, "prior": 1.0},
+            {
+                "src": "QR_MASKANS",
+                "tgt": "A_STMT",
+                "name": "QR_MASKANS_to_A_STMT",
+                "quality": 0.3,
+                "prior": 0.05,
+                "weak_only": True,
+            },
         ]
         if r_pre and r_suf and view_token_len(r_suf, self.tokenizer) >= self.min_r_suffix_tokens:
             edges.append({"src": "QR_PRE", "tgt": "R_SUF", "name": "QRPRE_to_RSUF", "quality": 1.0, "prior": 0.55})
@@ -135,7 +164,23 @@ class GSM8KViewBuilder(BaseViewBuilder):
             "messages": messages,
             "views": views,
             "edges": edges,
-            "meta": {"source": self.source, "split": self.split, "original_index": index},
+            "meta": {
+                "source": self.source,
+                "split": self.split,
+                "original_index": index,
+                "view_stats": {
+                    "r_full_tokens": view_token_len(r_full, self.tokenizer),
+                    "r_strip_tokens": view_token_len(r_strip, self.tokenizer),
+                    "r_maskans_tokens": view_token_len(r_maskans, self.tokenizer),
+                    "r_last_tokens": view_token_len(r_last, self.tokenizer),
+                    "r_last_mask_tokens": view_token_len(r_last_mask, self.tokenizer),
+                    "strip_removed_tokens": max(
+                        0, view_token_len(r_full, self.tokenizer) - view_token_len(r_strip, self.tokenizer)
+                    ),
+                    "mask_replacements": int(mask_stats.get("mask_replacements", 0)),
+                    "last_mask_replacements": int(last_mask_stats.get("mask_replacements", 0)),
+                },
+            },
         }
         return self._validate_or_skip(record)
 
@@ -235,6 +280,54 @@ def split_gsm8k_answer(text: str) -> tuple[str, str, float]:
     if matches:
         return text.strip(), matches[-1].replace("$", ""), 0.7
     return text.strip(), text.strip(), 0.3
+
+
+def strip_final_answer(text: str) -> str:
+    before_hash_answer = text.split(FINAL_MARKER, 1)[0].rstrip()
+    cleaned = before_hash_answer
+    for pattern in FINAL_ANSWER_PATTERNS:
+        cleaned = re.sub(pattern, "", cleaned, flags=re.DOTALL).rstrip()
+    return cleaned or before_hash_answer
+
+
+def normalize_numeric_answer(answer: str) -> str:
+    value = str(answer).strip()
+    value = value.replace("$", "").replace(",", "")
+    return value.rstrip(".")
+
+
+def mask_final_answer(text: str, answer: str) -> tuple[str, dict[str, int]]:
+    source = str(text)
+    normalized_answer = normalize_numeric_answer(answer)
+    if not source.strip() or not normalized_answer:
+        return source, {"mask_replacements": 0}
+    sentences = split_reasoning_sentences(source)
+    if not sentences:
+        return source, {"mask_replacements": 0}
+    prefix = sentences[:-2]
+    target_sentences = sentences[-2:]
+    target = " ".join(target_sentences)
+    variants = sorted({normalized_answer, str(answer).strip(), str(answer).strip().replace("$", "")}, key=len, reverse=True)
+    replacements = 0
+    masked = target
+    for variant in variants:
+        if not variant:
+            continue
+        pattern = re.compile(rf"(?<!\w)\$?{re.escape(variant)}(?!\w)")
+        masked, count = pattern.subn("<ANS>", masked)
+        replacements += count
+    if not replacements:
+        return source, {"mask_replacements": 0}
+    rebuilt = " ".join(prefix + [masked]).strip()
+    return rebuilt, {"mask_replacements": replacements}
+
+
+def last_k_reasoning_sentences(text: str, k: int = 2) -> str:
+    sentences = split_reasoning_sentences(text)
+    if sentences:
+        return " ".join(sentences[-max(1, int(k)) :]).strip()
+    words = str(text).split()
+    return " ".join(words[-64:]).strip()
 
 
 def split_rationale_span(

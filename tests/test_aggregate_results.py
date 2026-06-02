@@ -13,7 +13,16 @@ sys.modules[SPEC.name] = aggregate_results
 SPEC.loader.exec_module(aggregate_results)
 
 
-def write_run(root: Path, name: str, method: str, seed: int, accuracy: float, wall: float, flops: int) -> None:
+def write_run(
+    root: Path,
+    name: str,
+    method: str,
+    seed: int,
+    accuracy: float,
+    wall: float,
+    flops: int,
+    generation_num_examples: int | None = None,
+) -> None:
     run = root / "runs" / name
     run.mkdir(parents=True)
     (run / "run_config.json").write_text(
@@ -29,7 +38,14 @@ def write_run(root: Path, name: str, method: str, seed: int, accuracy: float, wa
         encoding="utf-8",
     )
     (run / "results.json").write_text(
-        json.dumps({"accuracy": accuracy, "exact_match": accuracy - 0.01, "estimated_total_flops": flops}),
+        json.dumps(
+            {
+                "accuracy": accuracy,
+                "exact_match": accuracy - 0.01,
+                "estimated_total_flops": flops,
+                "generation_num_examples": generation_num_examples,
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -47,3 +63,15 @@ def test_summary_by_method_outputs_mean_and_std(tmp_path: Path):
     assert float(summary[0]["train_wall_clock_mean"]) == 15.0
     assert float(summary[0]["flops_mean"]) == 200.0
     assert float(summary[0]["accuracy_std"]) > 0
+
+
+def test_summary_by_method_separates_eval_size(tmp_path: Path):
+    write_run(tmp_path, "run256", "mav_r3", 0, 0.5, 10.0, 100, generation_num_examples=256)
+    write_run(tmp_path, "runfull", "mav_r3", 0, 0.4, 20.0, 300, generation_num_examples=1319)
+    rows = [aggregate_results.row_for_run(path) for path in aggregate_results.iter_run_dirs(tmp_path)]
+
+    aggregate_results.write_summary_by_method(tmp_path, rows)
+
+    summary = list(csv.DictReader((tmp_path / "aggregate" / "summary_by_method.csv").open()))
+    assert {row["eval_examples"] for row in summary} == {"256", "1319"}
+    assert len(summary) == 2

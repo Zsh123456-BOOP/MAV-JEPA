@@ -2,7 +2,7 @@ from argparse import Namespace
 from collections import Counter
 
 from mavjepa.edge_sampler import EdgeSampler
-from mavjepa.trainer_mv import MultiViewTrainer, strip_final_answer
+from mavjepa.trainer_mv import MultiViewTrainer, split_main_weak_edges, strip_final_answer, tokenize_view
 
 
 class ListTokenizer:
@@ -24,9 +24,12 @@ def trainer_for_candidate_tests() -> MultiViewTrainer:
         strip_answer_from_reasoning=False,
         disable_answer_target_edges=False,
         lambda_base=0.05,
+        weak_edge_step_prob=0.03,
+        weak_edge_start_step=3000,
     )
     trainer.tokenizer = ListTokenizer()
     trainer.view_max_lengths = {"Q": 256, "R": 256, "A": 64, "R_SUF": 128}
+    trainer.view_truncation_sides = {"Q": "right", "R": "left"}
     trainer.config_edges = {}
     trainer.allowed_edges = None
     trainer.lambda_mode = "fixed"
@@ -80,3 +83,22 @@ def test_strip_answer_from_reasoning_does_not_clear_useful_reasoning():
 
     assert cleaned.strip()
     assert "2 + 2" in cleaned
+
+
+def test_weak_only_edges_do_not_enter_main_sampler():
+    candidates = [
+        {"name": "Q_to_R_MASKANS", "src": "Q", "tgt": "R_MASKANS"},
+        {"name": "QR_MASKANS_to_A_STMT", "src": "QR_MASKANS", "tgt": "A_STMT", "weak_only": True},
+    ]
+
+    main_edges, weak_edges = split_main_weak_edges(candidates)
+
+    assert [edge["name"] for edge in main_edges] == ["Q_to_R_MASKANS"]
+    assert [edge["name"] for edge in weak_edges] == ["QR_MASKANS_to_A_STMT"]
+
+
+def test_per_view_right_truncation_keeps_prefix():
+    tokenizer = ListTokenizer()
+    tokenized = tokenize_view(tokenizer, "Question: keep " + " ".join(f"tail{i}" for i in range(20)), 5, "right")
+
+    assert tokenized["input_ids"][0, 1].item() == 2

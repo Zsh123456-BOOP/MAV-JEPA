@@ -1,0 +1,72 @@
+task: gsm8k
+views:
+  Q:
+    max_length: 256
+    truncation_side: right
+  R_FULL:
+    max_length: 384
+    truncation_side: left
+  R_STRIP:
+    max_length: 384
+    truncation_side: left
+  R_MASKANS:
+    max_length: 384
+    truncation_side: left
+  R_LAST_MASK:
+    max_length: 128
+    truncation_side: left
+  QR_MASKANS:
+    max_length: 512
+    truncation_side: right
+  A_STMT:
+    max_length: 64
+    truncation_side: right
+edges:
+  - name: Q_to_R_FULL
+    src: Q
+    tgt: R_FULL
+    quality: 1.0
+    prior: 1.0
+    lambda: 0.03
+    ce_ratio_cap: 0.03
+    min_target_tokens: 32
+    target_pooling: mean_last_k
+  - name: Q_to_R_STRIP
+    src: Q
+    tgt: R_STRIP
+    quality: 1.0
+    prior: 1.0
+    lambda: 0.03
+    ce_ratio_cap: 0.03
+    min_target_tokens: 32
+    target_pooling: mean_last_k
+  - name: Q_to_R_MASKANS
+    src: Q
+    tgt: R_MASKANS
+    quality: 1.0
+    prior: 1.0
+    lambda: 0.03
+    ce_ratio_cap: 0.03
+    min_target_tokens: 32
+    target_pooling: mean_last_k
+  - name: Q_to_R_LAST_MASK
+    src: Q
+    tgt: R_LAST_MASK
+    quality: 1.0
+    prior: 1.0
+    lambda: 0.03
+    ce_ratio_cap: 0.03
+    min_target_tokens: 8
+    target_pooling: mean
+  - name: QR_MASKANS_to_A_STMT
+    src: QR_MASKANS
+    tgt: A_STMT
+    quality: 0.3
+    prior: 0.05
+    lambda: 0.003
+    ce_ratio_cap: 0.005
+    min_target_tokens: 4
+    target_pooling: mean
+    weak_only: true
+    start_step: 3000
+default_edge_budget: 1

@@ -313,38 +313,45 @@ def csv_value(value: Any) -> str:
 def write_summary_by_method(outputs_dir: Path, rows: list[dict[str, str]]) -> None:
     aggregate_dir = outputs_dir / "aggregate"
     aggregate_dir.mkdir(parents=True, exist_ok=True)
-    groups: dict[tuple[str, str], list[dict[str, str]]] = {}
+    groups: dict[tuple[str, str, str], list[dict[str, str]]] = {}
     for row in rows:
         method = row.get("method")
         task = row.get("task")
         if not method or not task:
             continue
-        groups.setdefault((task, method), []).append(row)
+        eval_examples = row.get("generation_num_examples") or "null"
+        groups.setdefault((task, method, eval_examples), []).append(row)
     columns = [
         "task",
         "method",
+        "eval_examples",
         "seeds",
         "runs",
         "accuracy_mean",
         "accuracy_std",
         "exact_match_mean",
         "train_wall_clock_mean",
+        "generation_wall_clock_mean",
         "flops_mean",
+        "jepa_loss_mean",
     ]
     out_rows = []
-    for (task, method), group in sorted(groups.items()):
+    for (task, method, eval_examples), group in sorted(groups.items()):
         seeds = sorted({row.get("seed", "null") for row in group})
         out_rows.append(
             {
                 "task": task,
                 "method": method,
+                "eval_examples": eval_examples,
                 "seeds": " ".join(seeds),
                 "runs": len(group),
                 "accuracy_mean": mean_str(parse_float(row.get("accuracy")) for row in group),
                 "accuracy_std": std_str(parse_float(row.get("accuracy")) for row in group),
                 "exact_match_mean": mean_str(parse_float(row.get("exact_match")) for row in group),
                 "train_wall_clock_mean": mean_str(parse_float(row.get("train_wall_clock_sec")) for row in group),
+                "generation_wall_clock_mean": mean_str(parse_float(row.get("generation_wall_clock_sec")) for row in group),
                 "flops_mean": mean_str(parse_float(row.get("flops")) for row in group),
+                "jepa_loss_mean": mean_str(parse_float(row.get("jepa_loss")) for row in group),
             }
         )
     with (aggregate_dir / "summary_by_method.csv").open("w", newline="", encoding="utf-8") as handle:
@@ -389,6 +396,11 @@ ABLATION_MAP = {
     "mav_rspan_qrpre_rsuf_p125_l003": "A16",
     "mav_qr_rspan_prior_p125_l003": "A17",
     "mav_qr_rspan_answerweak_p125_l003": "A18",
+    "mav_qr_full_nostrip_p125_l003_cap003": "A19",
+    "mav_qr_maskans_p125_l003_cap003": "A20",
+    "mav_qr_lastmask_p125_l003_cap003": "A21",
+    "mav_qr_maskans_answeak_p125_l003": "A22",
+    "mav_qr_strip_explicit_p125_l003_cap003": "A23",
 }
 
 ABLATION_LABELS = {
@@ -411,6 +423,11 @@ ABLATION_LABELS = {
     "A16": "R2 rationale span QR_PRE->R_SUF, p=0.125, lambda=0.03",
     "A17": "R2 Q->R plus rationale span prior, p=0.125, lambda=0.03",
     "A18": "R2 Q->R plus rationale span plus weak answer statement, p=0.125, lambda=0.03",
+    "A19": "R3 Q->R_FULL no-strip, p=0.125, lambda=0.03, cap=0.03",
+    "A20": "R3 Q->R_MASKANS answer-masked rationale, p=0.125, lambda=0.03, cap=0.03",
+    "A21": "R3 Q->R_LAST_MASK final-step masked rationale, p=0.125, lambda=0.03, cap=0.03",
+    "A22": "R3 Q->R_MASKANS plus non-competing weak answer statement, p=0.125",
+    "A23": "R3 Q->R_STRIP explicit stripped rationale control, p=0.125, lambda=0.03",
 }
 
 

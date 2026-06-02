@@ -18,6 +18,7 @@ from .adaptive_lambda import AdaptiveLambda
 from .edge_sampler import EdgeSampler
 from .logging_utils import append_jsonl
 from .losses import jepa_loss, pooled_hidden
+from .view_builders import strip_final_answer
 
 
 class MVJEPADataset(Dataset):
@@ -55,6 +56,7 @@ class MVJEPADataset(Dataset):
             "labels": labels,
             "views": record.get("views", {}),
             "edges": record.get("edges", []),
+            "meta": record.get("meta", {}),
         }
 
 
@@ -87,6 +89,7 @@ def collate_mv(batch: list[dict[str, Any]]) -> dict[str, Any]:
         "labels": torch.stack([item["labels"] for item in batch]),
         "views": [item["views"] for item in batch],
         "edges": [item["edges"] for item in batch],
+        "meta": [item["meta"] for item in batch],
     }
 
 
@@ -116,9 +119,15 @@ class MultiViewTrainer:
             for name, cfg in self.view_config.get("views", {}).items()
             if isinstance(cfg, dict)
         }
+        self.view_truncation_sides = {
+            name: str(cfg.get("truncation_side", "left"))
+            for name, cfg in self.view_config.get("views", {}).items()
+            if isinstance(cfg, dict)
+        }
         self.allowed_edges = parse_allowed_edges(getattr(args, "allowed_edges", None))
         self.lambda_mode = getattr(args, "lambda_mode", "fixed")
         self.last_mv_loss_info: dict[str, Any] = {}
+        self.view_stats_accumulator: dict[str, list[float]] = defaultdict(list)
         self.total_params = sum(param.numel() for param in self.model.parameters())
         self.trainable_params = sum(param.numel() for param in self.model.parameters() if param.requires_grad)
 
@@ -202,6 +211,8 @@ class MultiViewTrainer:
                     "total_loss": float(total_loss.detach().cpu()),
                     "learning_rate": self.args.learning_rate,
                     "active_edges": [item["name"] for item in edge_log],
+                    "selected_main_edges": self.last_mv_loss_info.get("selected_main_edges", []),
+                    "selected_weak_edges": self.last_mv_loss_info.get("selected_weak_edges", []),
                     "candidate_edges_before_filter": self.last_mv_loss_info.get("candidate_edges_before_filter"),
                     "candidate_edges_after_filter": self.last_mv_loss_info.get("candidate_edges_after_filter"),
                     "filtered_edge_counts": dict(self.filtered_edge_counts),
@@ -214,6 +225,8 @@ class MultiViewTrainer:
                     "gpu_memory_gb": current_gpu_memory_gb(),
                     "mv_edges_selected": selected_count,
                     "mv_edges_used": used_count,
+                    "main_edges_used": self.last_mv_loss_info.get("main_edges_used", 0),
+                    "weak_edges_used": self.last_mv_loss_info.get("weak_edges_used", 0),
                     "mv_edges_filtered": self.last_mv_loss_info.get("filtered_edges_step"),
                     "tokens": batch_tokens,
                     "view_tokens": batch_view_tokens,
@@ -268,6 +281,7 @@ class MultiViewTrainer:
             "same_flop_accuracy": None,
             "trainable_params": self.trainable_params,
             "total_params": self.total_params,
+            "view_stats": summarize_numeric_lists(self.view_stats_accumulator),
             "eval_file": eval_file,
         }
 
@@ -301,11 +315,22 @@ class MultiViewTrainer:
         filtered_count_start = sum(self.filtered_edge_counts.values())
         view_tokens = 0
         raw_losses_by_edge: dict[str, list[float]] = defaultdict(list)
-        for views, edges in zip(batch["views"], batch["edges"]):
+        selected_main_names: list[str] = []
+        selected_weak_names: list[str] = []
+        main_edges_used = 0
+        weak_edges_used = 0
+        for views, edges, meta in zip(batch["views"], batch["edges"], batch.get("meta", [{}] * len(batch["views"]))):
+            self.collect_view_stats(meta)
             candidate_edges = self.candidate_edges(views, edges, step=step)
             candidate_before_count += self.last_mv_loss_info.get("candidate_edges_before_filter", 0) or 0
             candidate_after_count += len(candidate_edges)
-            selected, probs = self.sampler.sample(candidate_edges)
+            main_candidates, weak_candidates = split_main_weak_edges(candidate_edges)
+            selected, probs = self.sampler.sample(main_candidates)
+            weak_selected, weak_probs = self.sample_weak_edges(weak_candidates, step=step)
+            selected_main_names.extend(edge["name"] for edge in selected)
+            selected_weak_names.extend(edge["name"] for edge in weak_selected)
+            selected = selected + weak_selected
+            probs = {**probs, **weak_probs}
             selected_count += len(selected)
             for edge in selected:
                 self.sampled_edge_counts[edge["name"]] += 1
@@ -347,8 +372,13 @@ class MultiViewTrainer:
                         "weighted_loss": float(weighted.detach().cpu()),
                         "ce_ratio_cap": ratio_cap,
                         "prob": probs.get(edge_name),
+                        "edge_pool": "weak" if edge.get("weak_only") else "main",
                     }
                 )
+                if edge.get("weak_only"):
+                    weak_edges_used += 1
+                else:
+                    main_edges_used += 1
         filtered_edges_step = sum(self.filtered_edge_counts.values()) - filtered_count_start
         if raw_losses_by_edge and self.lambda_mode in {"current_adaptive", "inverse_loss"}:
             self.lambda_controller.update_many(
@@ -367,6 +397,10 @@ class MultiViewTrainer:
                     "candidate_edges_before_filter": candidate_before_count,
                     "candidate_edges_after_filter": candidate_after_count,
                     "filtered_edges_step": filtered_edges_step,
+                    "selected_main_edges": selected_main_names,
+                    "selected_weak_edges": selected_weak_names,
+                    "main_edges_used": main_edges_used,
+                    "weak_edges_used": weak_edges_used,
                 }
             )
             return zero, edge_log, selected_count, 0, view_tokens
@@ -392,8 +426,39 @@ class MultiViewTrainer:
             "candidate_edges_before_filter": candidate_before_count,
             "candidate_edges_after_filter": candidate_after_count,
             "filtered_edges_step": filtered_edges_step,
+            "selected_main_edges": selected_main_names,
+            "selected_weak_edges": selected_weak_names,
+            "main_edges_used": main_edges_used,
+            "weak_edges_used": weak_edges_used,
         }
         return mv_loss, edge_log, selected_count, len(losses), view_tokens
+
+    def sample_weak_edges(self, weak_candidates: list[dict[str, Any]], step: int) -> tuple[list[dict[str, Any]], dict[str, float]]:
+        if not weak_candidates:
+            return [], {}
+        weak_start = int(getattr(self.args, "weak_edge_start_step", 0) or 0)
+        if step < weak_start:
+            return [], {}
+        weak_prob = min(1.0, max(0.0, float(getattr(self.args, "weak_edge_step_prob", 0.0) or 0.0)))
+        if weak_prob <= 0.0 or self.rng.random() > weak_prob:
+            return [], {}
+        weights = [max(0.0, float(edge.get("prior", edge.get("quality", 1.0)) or 0.0)) for edge in weak_candidates]
+        if not any(weights):
+            weights = [1.0 for _ in weak_candidates]
+        selected = self.rng.choices(weak_candidates, weights=weights, k=1)
+        total = sum(weights)
+        probs = {edge["name"]: weight / total for edge, weight in zip(weak_candidates, weights)}
+        return selected, probs
+
+    def collect_view_stats(self, meta: dict[str, Any]) -> None:
+        stats = meta.get("view_stats") if isinstance(meta, dict) else None
+        if not isinstance(stats, dict):
+            return
+        for key, value in stats.items():
+            try:
+                self.view_stats_accumulator[key].append(float(value))
+            except (TypeError, ValueError):
+                continue
 
     def candidate_edges(self, views: dict[str, str], edges: list[dict[str, Any]], step: int | None = None) -> list[dict[str, Any]]:
         if not self.config_edges:
@@ -482,6 +547,10 @@ class MultiViewTrainer:
             "skip_reason": skip_reason,
             "ce_ratio_cap_value": cap_value,
             "step": step,
+            "selected_main_edges": [],
+            "selected_weak_edges": [],
+            "main_edges_used": 0,
+            "weak_edges_used": 0,
         }
         return next(self.model.parameters()).new_tensor(0.0), [], 0, 0, 0
 
@@ -522,7 +591,12 @@ class MultiViewTrainer:
         if predictors > 0:
             text = text + "".join(f"<|predictor_{idx}|>" for idx in range(1, predictors + 1))
         max_length = min(self.args.view_max_length, self.view_max_lengths.get(view_name, self.args.view_max_length))
-        tokenized = tokenize_view_left_truncate(self.tokenizer, text, max_length)
+        tokenized = tokenize_view(
+            self.tokenizer,
+            text,
+            max_length,
+            truncation_side=self.view_truncation_sides.get(view_name, "left"),
+        )
         input_ids = tokenized["input_ids"].to(self.device)
         attention_mask = tokenized["attention_mask"].to(self.device)
         context = nullcontext() if grad else torch.no_grad()
@@ -552,24 +626,29 @@ def edge_ratio_cap(edge: dict[str, Any], default: float) -> float:
         return max(0.0, float(default or 0.0))
 
 
-def strip_final_answer(text: str) -> str:
-    before_hash_answer = text.split("####", 1)[0].rstrip()
-    patterns = [
-        r"\b[Tt]he answer is\b.*$",
-        r"\b[Ss]o the answer is\b.*$",
-        r"\b[Tt]herefore,? the answer is\b.*$",
-    ]
-    cleaned = before_hash_answer
-    for pattern in patterns:
-        cleaned = re.sub(pattern, "", cleaned, flags=re.DOTALL).rstrip()
-    return cleaned or before_hash_answer
+def split_main_weak_edges(candidates: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    main_edges = [edge for edge in candidates if not edge.get("weak_only")]
+    weak_edges = [edge for edge in candidates if edge.get("weak_only")]
+    return main_edges, weak_edges
 
 
-def tokenize_view_left_truncate(tokenizer: Any, text: str, max_length: int) -> dict[str, torch.Tensor]:
+def tokenize_view(
+    tokenizer: Any,
+    text: str,
+    max_length: int,
+    truncation_side: str = "left",
+) -> dict[str, torch.Tensor]:
     encoded = tokenizer(text, add_special_tokens=True, truncation=False)
     input_ids = list(encoded["input_ids"])
     if len(input_ids) > max_length:
-        input_ids = input_ids[-max_length:]
+        if truncation_side == "right":
+            input_ids = input_ids[:max_length]
+        elif truncation_side == "middle":
+            left = max_length // 2
+            right = max_length - left
+            input_ids = input_ids[:left] + input_ids[-right:]
+        else:
+            input_ids = input_ids[-max_length:]
     attention = [1] * len(input_ids)
     pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
     if len(input_ids) < max_length:
@@ -580,6 +659,10 @@ def tokenize_view_left_truncate(tokenizer: Any, text: str, max_length: int) -> d
         "input_ids": torch.tensor([input_ids], dtype=torch.long),
         "attention_mask": torch.tensor([attention], dtype=torch.long),
     }
+
+
+def tokenize_view_left_truncate(tokenizer: Any, text: str, max_length: int) -> dict[str, torch.Tensor]:
+    return tokenize_view(tokenizer, text, max_length, truncation_side="left")
 
 
 def load_view_config(path: str | None) -> dict[str, Any]:
@@ -609,3 +692,11 @@ def peak_gpu_memory_gb() -> float | None:
     if not torch.cuda.is_available():
         return None
     return round(torch.cuda.max_memory_allocated() / (1024**3), 4)
+
+
+def summarize_numeric_lists(values: dict[str, list[float]]) -> dict[str, float]:
+    summary = {}
+    for key, nums in values.items():
+        if nums:
+            summary[f"{key}_mean"] = sum(nums) / len(nums)
+    return summary
