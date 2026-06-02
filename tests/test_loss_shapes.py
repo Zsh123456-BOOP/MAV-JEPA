@@ -3,8 +3,8 @@ from pathlib import Path
 
 import torch
 
-from mavjepa.losses import jepa_loss, last_token_hidden
-from mavjepa.trainer_mv import MVJEPADataset
+from mavjepa.losses import jepa_loss, last_token_hidden, pooled_hidden
+from mavjepa.trainer_mv import MVJEPADataset, strip_final_answer
 
 
 def test_last_token_hidden_shape():
@@ -19,10 +19,19 @@ def test_last_token_hidden_shape():
 def test_jepa_losses_are_scalar_and_finite():
     src = torch.randn(3, 8)
     tgt = torch.randn(3, 8)
-    for loss_type in ["cosine", "mse", "l2"]:
+    for loss_type in ["cosine", "mse", "normalized_mse", "l2"]:
         loss = jepa_loss(src, tgt, loss_type=loss_type)
         assert loss.shape == ()
         assert torch.isfinite(loss)
+
+
+def test_pooled_hidden_mean_last_k_uses_valid_suffix():
+    hidden = torch.arange(1 * 5 * 2, dtype=torch.float32).reshape(1, 5, 2)
+    mask = torch.tensor([[1, 1, 1, 1, 0]])
+
+    out = pooled_hidden(hidden, mask, mode="mean_last_k", last_k=2)
+
+    assert torch.equal(out, hidden[:, 2:4].mean(dim=1))
 
 
 def test_detach_target_blocks_target_grad():
@@ -63,3 +72,9 @@ def test_mv_dataset_reads_jsonl_with_unicode_line_separator(tmp_path: Path):
 
     assert len(dataset) == 1
     assert dataset.records[0]["messages"][1]["content"] == "contains\u2028separator"
+
+
+def test_strip_final_answer_removes_gsm8k_hash_answer():
+    text = "We compute 2 + 2 = 4.\n#### 4"
+
+    assert strip_final_answer(text) == "We compute 2 + 2 = 4."

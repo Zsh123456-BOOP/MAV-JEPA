@@ -30,3 +30,11 @@ def test_all_zero_emas_fallback_to_lambda_base():
     controller.update_many({"a": 0.0, "b": 0.0})
     assert controller.lambda_for("a") == 1.25
     assert controller.lambda_for("b") == 1.25
+
+
+def test_inverse_loss_lambda_never_upweights_hard_edge():
+    controller = AdaptiveLambda(lambda_base=1.0, lambda_min=0.1, lambda_max=4.0, warmup_steps=0)
+    controller.update_many({"hard": 10.0, "easy": 1.0})
+
+    assert controller.lambda_for_inverse_loss("hard") < 1.0
+    assert controller.lambda_for_inverse_loss("easy") == 1.0

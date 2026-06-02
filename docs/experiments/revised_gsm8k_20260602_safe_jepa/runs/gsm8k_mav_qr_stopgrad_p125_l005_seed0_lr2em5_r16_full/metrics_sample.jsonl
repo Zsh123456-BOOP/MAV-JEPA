@@ -1,0 +1,170 @@
+{"active_edges": [], "ce_loss": 0.41693660616874695, "epoch": 0.00013381506757660912, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 1, "total_loss": 0.41693660616874695}
+{"active_edges": [], "ce_loss": 0.8453704714775085, "epoch": 0.00026763013515321824, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 2, "total_loss": 0.8453704714775085}
+{"active_edges": [], "ce_loss": 0.32858890295028687, "epoch": 0.0004014452027298274, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 3, "total_loss": 0.32858890295028687}
+{"active_edges": [], "ce_loss": 0.3110108971595764, "epoch": 0.0005352602703064365, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4, "total_loss": 0.3110108971595764}
+{"active_edges": [], "ce_loss": 1.0179740190505981, "epoch": 0.0006690753378830456, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5, "total_loss": 1.0179740190505981}
+{"active_edges": [], "ce_loss": 0.4290492832660675, "epoch": 0.0008028904054596548, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6, "total_loss": 0.4290492832660675}
+{"active_edges": [], "ce_loss": 1.2084357738494873, "epoch": 0.0009367054730362638, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 7, "total_loss": 1.2084357738494873}
+{"active_edges": [], "ce_loss": 1.1746549606323242, "epoch": 0.001070520540612873, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 8, "total_loss": 1.1746549606323242}
+{"active_edges": [], "ce_loss": 0.9070761799812317, "epoch": 0.0012043356081894822, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 9, "total_loss": 0.9070761799812317}
+{"active_edges": [], "ce_loss": 1.1997551918029785, "epoch": 0.0013381506757660913, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10, "total_loss": 1.1997551918029785}
+{"active_edges": [], "ce_loss": 0.5148804783821106, "epoch": 0.0014719657433427003, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11, "total_loss": 0.5148804783821106}
+{"active_edges": [], "ce_loss": 1.5743682384490967, "epoch": 0.0016057808109193096, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 12, "total_loss": 1.5743682384490967}
+{"active_edges": [], "ce_loss": 0.5094290375709534, "epoch": 0.0017395958784959186, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 13, "total_loss": 0.5094290375709534}
+{"active_edges": [], "ce_loss": 0.4482131004333496, "epoch": 0.0018734109460725277, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14, "total_loss": 0.4482131004333496}
+{"active_edges": [], "ce_loss": 0.7795075178146362, "epoch": 0.002007226013649137, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 15, "total_loss": 0.7795075178146362}
+{"active_edges": [], "ce_loss": 0.5147830843925476, "epoch": 0.002141041081225746, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 16, "total_loss": 0.5147830843925476}
+{"active_edges": [], "ce_loss": 0.5319482088088989, "epoch": 0.002274856148802355, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 17, "total_loss": 0.5319482088088989}
+{"active_edges": [], "ce_loss": 0.7430654764175415, "epoch": 0.0024086712163789645, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 18, "total_loss": 0.7430654764175415}
+{"active_edges": [], "ce_loss": 0.9393097162246704, "epoch": 0.0025424862839555735, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 19, "total_loss": 0.9393097162246704}
+{"active_edges": [], "ce_loss": 0.28649550676345825, "epoch": 0.0026763013515321826, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 20, "total_loss": 0.28649550676345825}
+{"active_edges": [], "ce_loss": 0.6993748545646667, "epoch": 0.013515321825237521, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 101, "total_loss": 0.6993748545646667}
+{"active_edges": [], "ce_loss": 0.17967605590820312, "epoch": 0.026896828582898435, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 201, "total_loss": 0.17967605590820312}
+{"active_edges": [], "ce_loss": 0.308828204870224, "epoch": 0.04027833534055935, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 301, "total_loss": 0.308828204870224}
+{"active_edges": [], "ce_loss": 0.4057159423828125, "epoch": 0.05365984209822026, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 401, "total_loss": 0.4057159423828125}
+{"active_edges": [], "ce_loss": 0.12502294778823853, "epoch": 0.06704134885588117, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 501, "total_loss": 0.12502294778823853}
+{"active_edges": [], "ce_loss": 0.4108642339706421, "epoch": 0.08042285561354208, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 601, "total_loss": 0.4108642339706421}
+{"active_edges": [], "ce_loss": 0.34188342094421387, "epoch": 0.093804362371203, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 701, "total_loss": 0.34188342094421387}
+{"active_edges": [], "ce_loss": 0.5412899851799011, "epoch": 0.10718586912886391, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 801, "total_loss": 0.5412899851799011}
+{"active_edges": [], "ce_loss": 0.20776383578777313, "epoch": 0.12056737588652482, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 901, "total_loss": 0.20776383578777313}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.8180469274520874, "epoch": 0.13394888264418572, "jepa_loss": 0.0091552734375, "jepa_loss_raw": 0.018310546875, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 1001, "total_loss": 0.8272022008895874}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.30321717262268066, "epoch": 0.14733038940184665, "jepa_loss": 0.01275634765625, "jepa_loss_raw": 0.021240234375, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 1101, "total_loss": 0.31597352027893066}
+{"active_edges": [], "ce_loss": 0.19970062375068665, "epoch": 0.16071189615950757, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 1201, "total_loss": 0.19970062375068665}
+{"active_edges": [], "ce_loss": 0.1866544485092163, "epoch": 0.17409340291716846, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 1301, "total_loss": 0.1866544485092163}
+{"active_edges": [], "ce_loss": 0.6301805377006531, "epoch": 0.18747490967482938, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 1401, "total_loss": 0.6301805377006531}
+{"active_edges": [], "ce_loss": 0.4421291947364807, "epoch": 0.2008564164324903, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 1501, "total_loss": 0.4421291947364807}
+{"active_edges": [], "ce_loss": 0.299023300409317, "epoch": 0.21423792319015122, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 1601, "total_loss": 0.299023300409317}
+{"active_edges": [], "ce_loss": 0.4073658883571625, "epoch": 0.22761942994781212, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 1701, "total_loss": 0.4073658883571625}
+{"active_edges": [], "ce_loss": 0.4505941569805145, "epoch": 0.24100093670547304, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 1801, "total_loss": 0.4505941569805145}
+{"active_edges": [], "ce_loss": 0.18017256259918213, "epoch": 0.25438244346313393, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 1901, "total_loss": 0.18017256259918213}
+{"active_edges": [], "ce_loss": 0.16547290980815887, "epoch": 0.26776395022079486, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 2001, "total_loss": 0.16547290980815887}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.2589133083820343, "epoch": 0.2811454569784558, "jepa_loss": 0.01294566597789526, "jepa_loss_raw": 0.020751953125, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 2101, "total_loss": 0.27185896039009094}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.3163835108280182, "epoch": 0.2945269637361167, "jepa_loss": 0.01581917516887188, "jepa_loss_raw": 0.022216796875, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 2201, "total_loss": 0.332202672958374}
+{"active_edges": [], "ce_loss": 0.16669060289859772, "epoch": 0.3079084704937776, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 2301, "total_loss": 0.16669060289859772}
+{"active_edges": [], "ce_loss": 0.2928486764431, "epoch": 0.3212899772514385, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 2401, "total_loss": 0.2928486764431}
+{"active_edges": [], "ce_loss": 0.1709795445203781, "epoch": 0.3346714840090994, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 2501, "total_loss": 0.1709795445203781}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.35013750195503235, "epoch": 0.34805299076676033, "jepa_loss": 0.016357421875, "jepa_loss_raw": 0.016357421875, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 2601, "total_loss": 0.36649492383003235}
+{"active_edges": [], "ce_loss": 0.13662736117839813, "epoch": 0.36143449752442125, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 2701, "total_loss": 0.13662736117839813}
+{"active_edges": [], "ce_loss": 0.2256387323141098, "epoch": 0.37481600428208217, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 2801, "total_loss": 0.2256387323141098}
+{"active_edges": [], "ce_loss": 0.2477942705154419, "epoch": 0.3881975110397431, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 2901, "total_loss": 0.2477942705154419}
+{"active_edges": [], "ce_loss": 0.3232719898223877, "epoch": 0.401579017797404, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 3001, "total_loss": 0.3232719898223877}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.2473365217447281, "epoch": 0.4149605245550649, "jepa_loss": 0.01236682664602995, "jepa_loss_raw": 0.021240234375, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 3101, "total_loss": 0.2597033381462097}
+{"active_edges": [], "ce_loss": 0.15666958689689636, "epoch": 0.4283420313127258, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 3201, "total_loss": 0.15666958689689636}
+{"active_edges": [], "ce_loss": 0.07605312019586563, "epoch": 0.4417235380703867, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 3301, "total_loss": 0.07605312019586563}
+{"active_edges": [], "ce_loss": 0.4332714378833771, "epoch": 0.45510504482804764, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 3401, "total_loss": 0.4332714378833771}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.18186835944652557, "epoch": 0.46848655158570857, "jepa_loss": 0.009093417786061764, "jepa_loss_raw": 0.01190185546875, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 3501, "total_loss": 0.1909617781639099}
+{"active_edges": [], "ce_loss": 0.7360855937004089, "epoch": 0.4818680583433695, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 3601, "total_loss": 0.7360855937004089}
+{"active_edges": [], "ce_loss": 0.7923551201820374, "epoch": 0.49524956510103035, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 3701, "total_loss": 0.7923551201820374}
+{"active_edges": [], "ce_loss": 0.5676301717758179, "epoch": 0.5086310718586913, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 3801, "total_loss": 0.5676301717758179}
+{"active_edges": [], "ce_loss": 0.16660140454769135, "epoch": 0.5220125786163522, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 3901, "total_loss": 0.16660140454769135}
+{"active_edges": [], "ce_loss": 0.30979692935943604, "epoch": 0.5353940853740131, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4001, "total_loss": 0.30979692935943604}
+{"active_edges": [], "ce_loss": 0.33611369132995605, "epoch": 0.548775592131674, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4101, "total_loss": 0.33611369132995605}
+{"active_edges": [], "ce_loss": 0.3771231472492218, "epoch": 0.562157098889335, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4201, "total_loss": 0.3771231472492218}
+{"active_edges": [], "ce_loss": 0.49714013934135437, "epoch": 0.5755386056469959, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4301, "total_loss": 0.49714013934135437}
+{"active_edges": [], "ce_loss": 0.6101315021514893, "epoch": 0.5889201124046568, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4401, "total_loss": 0.6101315021514893}
+{"active_edges": [], "ce_loss": 0.230581134557724, "epoch": 0.6023016191623177, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4501, "total_loss": 0.230581134557724}
+{"active_edges": [], "ce_loss": 0.6388416886329651, "epoch": 0.6156831259199785, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4601, "total_loss": 0.6388416886329651}
+{"active_edges": [], "ce_loss": 0.34014713764190674, "epoch": 0.6290646326776395, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4701, "total_loss": 0.34014713764190674}
+{"active_edges": [], "ce_loss": 0.1624896228313446, "epoch": 0.6424461394353004, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4801, "total_loss": 0.1624896228313446}
+{"active_edges": [], "ce_loss": 0.2825939953327179, "epoch": 0.6558276461929613, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 4901, "total_loss": 0.2825939953327179}
+{"active_edges": [], "ce_loss": 0.14059971272945404, "epoch": 0.6692091529506222, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5001, "total_loss": 0.14059971272945404}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.31541451811790466, "epoch": 0.6825906597082831, "jepa_loss": 0.0084228515625, "jepa_loss_raw": 0.0084228515625, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 5101, "total_loss": 0.32383736968040466}
+{"active_edges": [], "ce_loss": 0.25330719351768494, "epoch": 0.6959721664659441, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5201, "total_loss": 0.25330719351768494}
+{"active_edges": [], "ce_loss": 0.30300620198249817, "epoch": 0.709353673223605, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5301, "total_loss": 0.30300620198249817}
+{"active_edges": [], "ce_loss": 0.3182956576347351, "epoch": 0.7227351799812659, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5401, "total_loss": 0.3182956576347351}
+{"active_edges": [], "ce_loss": 0.754784345626831, "epoch": 0.7361166867389268, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5501, "total_loss": 0.754784345626831}
+{"active_edges": [], "ce_loss": 0.44204482436180115, "epoch": 0.7494981934965878, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5601, "total_loss": 0.44204482436180115}
+{"active_edges": [], "ce_loss": 0.3416782319545746, "epoch": 0.7628797002542487, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5701, "total_loss": 0.3416782319545746}
+{"active_edges": [], "ce_loss": 0.2509640157222748, "epoch": 0.7762612070119096, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5801, "total_loss": 0.2509640157222748}
+{"active_edges": [], "ce_loss": 0.21559499204158783, "epoch": 0.7896427137695704, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 5901, "total_loss": 0.21559499204158783}
+{"active_edges": [], "ce_loss": 0.5962427258491516, "epoch": 0.8030242205272313, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6001, "total_loss": 0.5962427258491516}
+{"active_edges": [], "ce_loss": 0.6193460822105408, "epoch": 0.8164057272848922, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6101, "total_loss": 0.6193460822105408}
+{"active_edges": [], "ce_loss": 0.2811332046985626, "epoch": 0.8297872340425532, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6201, "total_loss": 0.2811332046985626}
+{"active_edges": [], "ce_loss": 0.2551637887954712, "epoch": 0.8431687408002141, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6301, "total_loss": 0.2551637887954712}
+{"active_edges": [], "ce_loss": 0.4320589601993561, "epoch": 0.856550247557875, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6401, "total_loss": 0.4320589601993561}
+{"active_edges": [], "ce_loss": 0.46288490295410156, "epoch": 0.8699317543155359, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6501, "total_loss": 0.46288490295410156}
+{"active_edges": [], "ce_loss": 0.39672598242759705, "epoch": 0.8833132610731969, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6601, "total_loss": 0.39672598242759705}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.15324324369430542, "epoch": 0.8966947678308578, "jepa_loss": 0.007232666015625, "jepa_loss_raw": 0.007232666015625, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 6701, "total_loss": 0.16047590970993042}
+{"active_edges": [], "ce_loss": 0.4692290127277374, "epoch": 0.9100762745885187, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6801, "total_loss": 0.4692290127277374}
+{"active_edges": [], "ce_loss": 0.3654538094997406, "epoch": 0.9234577813461796, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 6901, "total_loss": 0.3654538094997406}
+{"active_edges": [], "ce_loss": 0.352664977312088, "epoch": 0.9368392881038405, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 7001, "total_loss": 0.352664977312088}
+{"active_edges": [], "ce_loss": 0.322165846824646, "epoch": 0.9502207948615013, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 7101, "total_loss": 0.322165846824646}
+{"active_edges": [], "ce_loss": 0.16899213194847107, "epoch": 0.9636023016191623, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 7201, "total_loss": 0.16899213194847107}
+{"active_edges": [], "ce_loss": 0.2900454103946686, "epoch": 0.9769838083768232, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 7301, "total_loss": 0.2900454103946686}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.2385697066783905, "epoch": 0.9903653151344841, "jepa_loss": 0.00897216796875, "jepa_loss_raw": 0.00897216796875, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 7401, "total_loss": 0.2475418746471405}
+{"active_edges": [], "ce_loss": 0.13322162628173828, "epoch": 1.003746821892145, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 7501, "total_loss": 0.13322162628173828}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.07658016681671143, "epoch": 1.017128328649806, "jepa_loss": 0.0038290084339678288, "jepa_loss_raw": 0.00567626953125, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 7601, "total_loss": 0.08040917664766312}
+{"active_edges": [], "ce_loss": 0.31682902574539185, "epoch": 1.0305098354074669, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 7701, "total_loss": 0.31682902574539185}
+{"active_edges": [], "ce_loss": 0.7889318466186523, "epoch": 1.0438913421651277, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 7801, "total_loss": 0.7889318466186523}
+{"active_edges": [], "ce_loss": 0.2883855998516083, "epoch": 1.0572728489227887, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 7901, "total_loss": 0.2883855998516083}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.23227453231811523, "epoch": 1.0706543556804495, "jepa_loss": 0.00567626953125, "jepa_loss_raw": 0.00567626953125, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 8001, "total_loss": 0.23795080184936523}
+{"active_edges": [], "ce_loss": 0.3512331545352936, "epoch": 1.0840358624381106, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 8101, "total_loss": 0.3512331545352936}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.2819211184978485, "epoch": 1.0974173691957714, "jepa_loss": 0.006256103515625, "jepa_loss_raw": 0.006256103515625, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 8201, "total_loss": 0.2881772220134735}
+{"active_edges": [], "ce_loss": 0.30796754360198975, "epoch": 1.1107988759534324, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 8301, "total_loss": 0.30796754360198975}
+{"active_edges": [], "ce_loss": 0.19377867877483368, "epoch": 1.1241803827110932, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 8401, "total_loss": 0.19377867877483368}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.33000701665878296, "epoch": 1.1375618894687543, "jepa_loss": 0.00469970703125, "jepa_loss_raw": 0.00469970703125, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 8501, "total_loss": 0.33470672369003296}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.3273039162158966, "epoch": 1.150943396226415, "jepa_loss": 0.005462646484375, "jepa_loss_raw": 0.005462646484375, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 8601, "total_loss": 0.3327665627002716}
+{"active_edges": [], "ce_loss": 0.3312491476535797, "epoch": 1.164324902984076, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 8701, "total_loss": 0.3312491476535797}
+{"active_edges": [], "ce_loss": 0.29969531297683716, "epoch": 1.177706409741737, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 8801, "total_loss": 0.29969531297683716}
+{"active_edges": [], "ce_loss": 0.3091775178909302, "epoch": 1.1910879164993977, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 8901, "total_loss": 0.3091775178909302}
+{"active_edges": [], "ce_loss": 0.29958802461624146, "epoch": 1.2044694232570587, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 9001, "total_loss": 0.29958802461624146}
+{"active_edges": [], "ce_loss": 0.22196976840496063, "epoch": 1.2178509300147198, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 9101, "total_loss": 0.22196976840496063}
+{"active_edges": [], "ce_loss": 0.09951759874820709, "epoch": 1.2312324367723806, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 9201, "total_loss": 0.09951759874820709}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.3093831241130829, "epoch": 1.2446139435300414, "jepa_loss": 0.004302978515625, "jepa_loss_raw": 0.004302978515625, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 9301, "total_loss": 0.3136861026287079}
+{"active_edges": [], "ce_loss": 0.27933186292648315, "epoch": 1.2579954502877024, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 9401, "total_loss": 0.27933186292648315}
+{"active_edges": [], "ce_loss": 0.44379904866218567, "epoch": 1.2713769570453632, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 9501, "total_loss": 0.44379904866218567}
+{"active_edges": [], "ce_loss": 0.16403815150260925, "epoch": 1.2847584638030243, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 9601, "total_loss": 0.16403815150260925}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.12988686561584473, "epoch": 1.298139970560685, "jepa_loss": 0.005859375, "jepa_loss_raw": 0.005859375, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 9701, "total_loss": 0.13574624061584473}
+{"active_edges": [], "ce_loss": 0.1718314290046692, "epoch": 1.3115214773183461, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 9801, "total_loss": 0.1718314290046692}
+{"active_edges": [], "ce_loss": 0.15384860336780548, "epoch": 1.324902984076007, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 9901, "total_loss": 0.15384860336780548}
+{"active_edges": [], "ce_loss": 0.18298791348934174, "epoch": 1.3382844908336677, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10001, "total_loss": 0.18298791348934174}
+{"active_edges": [], "ce_loss": 0.17966295778751373, "epoch": 1.3516659975913288, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10101, "total_loss": 0.17966295778751373}
+{"active_edges": [], "ce_loss": 0.42586609721183777, "epoch": 1.3650475043489898, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10201, "total_loss": 0.42586609721183777}
+{"active_edges": [], "ce_loss": 0.5353555083274841, "epoch": 1.3784290111066506, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10301, "total_loss": 0.5353555083274841}
+{"active_edges": [], "ce_loss": 0.2513739764690399, "epoch": 1.3918105178643114, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10401, "total_loss": 0.2513739764690399}
+{"active_edges": [], "ce_loss": 0.14732684195041656, "epoch": 1.4051920246219725, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10501, "total_loss": 0.14732684195041656}
+{"active_edges": [], "ce_loss": 0.2653026282787323, "epoch": 1.4185735313796333, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10601, "total_loss": 0.2653026282787323}
+{"active_edges": [], "ce_loss": 0.26058292388916016, "epoch": 1.4319550381372943, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10701, "total_loss": 0.26058292388916016}
+{"active_edges": [], "ce_loss": 0.21527880430221558, "epoch": 1.445336544894955, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10801, "total_loss": 0.21527880430221558}
+{"active_edges": [], "ce_loss": 0.15674549341201782, "epoch": 1.4587180516526161, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 10901, "total_loss": 0.15674549341201782}
+{"active_edges": [], "ce_loss": 0.30236026644706726, "epoch": 1.472099558410277, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11001, "total_loss": 0.30236026644706726}
+{"active_edges": [], "ce_loss": 0.35439714789390564, "epoch": 1.485481065167938, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11101, "total_loss": 0.35439714789390564}
+{"active_edges": [], "ce_loss": 0.19514679908752441, "epoch": 1.4988625719255988, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11201, "total_loss": 0.19514679908752441}
+{"active_edges": [], "ce_loss": 0.2869552671909332, "epoch": 1.5122440786832598, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11301, "total_loss": 0.2869552671909332}
+{"active_edges": [], "ce_loss": 0.33197468519210815, "epoch": 1.5256255854409206, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11401, "total_loss": 0.33197468519210815}
+{"active_edges": [], "ce_loss": 0.25390318036079407, "epoch": 1.5390070921985815, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11501, "total_loss": 0.25390318036079407}
+{"active_edges": [], "ce_loss": 0.18997831642627716, "epoch": 1.5523885989562425, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11601, "total_loss": 0.18997831642627716}
+{"active_edges": [], "ce_loss": 0.30766236782073975, "epoch": 1.5657701057139035, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11701, "total_loss": 0.30766236782073975}
+{"active_edges": [], "ce_loss": 0.1609194129705429, "epoch": 1.5791516124715643, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11801, "total_loss": 0.1609194129705429}
+{"active_edges": [], "ce_loss": 0.9049640893936157, "epoch": 1.5925331192292251, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 11901, "total_loss": 0.9049640893936157}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.20570547878742218, "epoch": 1.6059146259868862, "jepa_loss": 0.00408935546875, "jepa_loss_raw": 0.00408935546875, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 12001, "total_loss": 0.20979483425617218}
+{"active_edges": [], "ce_loss": 0.40887677669525146, "epoch": 1.6192961327445472, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 12101, "total_loss": 0.40887677669525146}
+{"active_edges": [], "ce_loss": 0.18068401515483856, "epoch": 1.6326776395022078, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 12201, "total_loss": 0.18068401515483856}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.3416661322116852, "epoch": 1.6460591462598688, "jepa_loss": 0.004302978515625, "jepa_loss_raw": 0.004302978515625, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 12301, "total_loss": 0.3459691107273102}
+{"active_edges": [], "ce_loss": 0.4483086168766022, "epoch": 1.6594406530175299, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 12401, "total_loss": 0.4483086168766022}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.14963768422603607, "epoch": 1.6728221597751907, "jepa_loss": 0.003509521484375, "jepa_loss_raw": 0.003509521484375, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 12501, "total_loss": 0.15314720571041107}
+{"active_edges": [], "ce_loss": 0.13363592326641083, "epoch": 1.6862036665328515, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 12601, "total_loss": 0.13363592326641083}
+{"active_edges": [], "ce_loss": 0.37131309509277344, "epoch": 1.6995851732905125, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 12701, "total_loss": 0.37131309509277344}
+{"active_edges": [], "ce_loss": 0.10184504091739655, "epoch": 1.7129666800481735, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 12801, "total_loss": 0.10184504091739655}
+{"active_edges": [], "ce_loss": 0.26683393120765686, "epoch": 1.7263481868058344, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 12901, "total_loss": 0.26683393120765686}
+{"active_edges": [], "ce_loss": 0.23003827035427094, "epoch": 1.7397296935634952, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 13001, "total_loss": 0.23003827035427094}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.1298816204071045, "epoch": 1.7531112003211562, "jepa_loss": 0.004302978515625, "jepa_loss_raw": 0.004302978515625, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 13101, "total_loss": 0.1341845989227295}
+{"active_edges": [], "ce_loss": 0.2561466097831726, "epoch": 1.7664927070788172, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 13201, "total_loss": 0.2561466097831726}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.33817851543426514, "epoch": 1.779874213836478, "jepa_loss": 0.005462646484375, "jepa_loss_raw": 0.005462646484375, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 13301, "total_loss": 0.34364116191864014}
+{"active_edges": [], "ce_loss": 0.38870733976364136, "epoch": 1.7932557205941388, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 13401, "total_loss": 0.38870733976364136}
+{"active_edges": [], "ce_loss": 0.19413228332996368, "epoch": 1.8066372273517999, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 13501, "total_loss": 0.19413228332996368}
+{"active_edges": [], "ce_loss": 0.30108827352523804, "epoch": 1.8200187341094607, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 13601, "total_loss": 0.30108827352523804}
+{"active_edges": [], "ce_loss": 0.1918126493692398, "epoch": 1.8334002408671215, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 13701, "total_loss": 0.1918126493692398}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.1418149173259735, "epoch": 1.8467817476247825, "jepa_loss": 0.00408935546875, "jepa_loss_raw": 0.00408935546875, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 13801, "total_loss": 0.1459042727947235}
+{"active_edges": [], "ce_loss": 0.23070752620697021, "epoch": 1.8601632543824436, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 13901, "total_loss": 0.23070752620697021}
+{"active_edges": [], "ce_loss": 0.48475202918052673, "epoch": 1.8735447611401044, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14001, "total_loss": 0.48475202918052673}
+{"active_edges": [], "ce_loss": 0.2413889467716217, "epoch": 1.8869262678977652, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14101, "total_loss": 0.2413889467716217}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.13597571849822998, "epoch": 1.9003077746554262, "jepa_loss": 0.00469970703125, "jepa_loss_raw": 0.00469970703125, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 14201, "total_loss": 0.14067542552947998}
+{"active_edges": [], "ce_loss": 0.2565372884273529, "epoch": 1.9136892814130873, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14301, "total_loss": 0.2565372884273529}
+{"active_edges": [], "ce_loss": 0.5394025444984436, "epoch": 1.927070788170748, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14401, "total_loss": 0.5394025444984436}
+{"active_edges": [], "ce_loss": 0.24942316114902496, "epoch": 1.9404522949284089, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14501, "total_loss": 0.24942316114902496}
+{"active_edges": [], "ce_loss": 0.3047771751880646, "epoch": 1.95383380168607, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14601, "total_loss": 0.3047771751880646}
+{"active_edges": [], "ce_loss": 0.4170464277267456, "epoch": 1.9672153084437307, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14701, "total_loss": 0.4170464277267456}
+{"active_edges": ["Q_to_R"], "ce_loss": 0.3624468743801117, "epoch": 1.9805968152013915, "jepa_loss": 0.00390625, "jepa_loss_raw": 0.00390625, "lambda_by_edge": {"Q_to_R": 0.05}, "step": 14801, "total_loss": 0.3663531243801117}
+{"active_edges": [], "ce_loss": 0.7396369576454163, "epoch": 1.9939783219590526, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14901, "total_loss": 0.7396369576454163}
+{"active_edges": [], "ce_loss": 0.23379099369049072, "epoch": 2.0, "jepa_loss": 0.0, "jepa_loss_raw": 0.0, "lambda_by_edge": {}, "step": 14946, "total_loss": 0.23379099369049072}

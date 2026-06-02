@@ -1,0 +1,8 @@
+ablation,description,task,method,run_name,exact_match,exec_acc,train_loss,jepa_loss,flops,wall_clock_sec
+A10,"Revised Q->R stop-grad, p=0.125, lambda=0.05",gsm8k,mav_qr_stopgrad_p125_l005,gsm8k_mav_qr_stopgrad_p125_l005_seed0_lr2em5_r16_full,0.4806671721000758,null,0.3241018610952227,0.0009031353975615914,31657027697418240,2049.8197391033173
+A11,"Safe all-edge Q/R/A stop-grad, p=0.25, lambda=0.05",gsm8k,mav_qra_safe_all_p25_l005,gsm8k_mav_qra_safe_all_p25_l005_seed0_lr2em5_r16_full,0.46171341925701287,null,0.32382852811464524,0.0006494478290832916,30094537450905600,1903.696759223938
+A12,"Q->A answer-target diagnostic, p=0.25, lambda=0.05",gsm8k,mav_qa_only_p25_l005,gsm8k_mav_qa_only_p25_l005_seed0_lr2em5_r16_full,0.47384382107657314,null,0.3271772353683715,0.003667650913201406,30710286536908800,2363.2099113464355
+A6,MV trainer CE-only sanity,gsm8k,mv_sft_lora,gsm8k_mv_sft_lora_seed0_lr2em5_r16_full,0.4829416224412434,null,0.32297337705275186,0.0,28630786332672000,1570.981427192688
+A7,"Revised Q->R stop-grad, p=0.25, lambda=0.05",gsm8k,mav_qr_stopgrad_p25_l005,gsm8k_mav_qr_stopgrad_p25_l005_seed0_lr2em5_r16_full,0.48597422289613346,null,0.32430609004395317,0.0012586331932610939,34524988468469760,2324.1401817798615
+A8,"Revised Q->R stop-grad, p=0.50, lambda=0.05",gsm8k,mav_qr_stopgrad_p50_l005,gsm8k_mav_qr_stopgrad_p50_l005_seed0_lr2em5_r16_full,0.4791508718726308,null,0.3247850349280875,0.0017314181166948274,40502205688012800,2576.780040502548
+A9,"Revised Q->R normalized MSE, p=0.25, lambda=0.05",gsm8k,mav_qr_normmse_p25_l005,gsm8k_mav_qr_normmse_p25_l005_seed0_lr2em5_r16_full,0.46019711902956784,null,0.32293963240514145,7.106982511512473e-06,34511251013591040,2400.6368980407715

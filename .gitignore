@@ -14,3 +14,9 @@ spider_data/
 
 *.log
 *.tmp
+
+# Local handoff bundles and third-party paper copies are kept out of the public repo.
+gpt_pro_handoff_mav_jepa_*/
+gpt_pro_handoff_mav_jepa_*.zip
+docs/papers/*.pdf
+docs/papers/*.extracted.txt

@@ -43,6 +43,17 @@ class AdaptiveLambda:
         value = self.lambda_base * self.ema[edge_name] / mean_ema
         return float(min(self.lambda_max, max(self.lambda_min, value)))
 
+    def lambda_for_inverse_loss(self, edge_name: str) -> float:
+        if self.steps < self.warmup_steps:
+            return float(self.lambda_base)
+        mean_ema = self.mean_ema()
+        if mean_ema <= self.eps:
+            return float(self.lambda_base)
+        edge_ema = self.ema.get(edge_name, mean_ema)
+        value = self.lambda_base * mean_ema / max(edge_ema, self.eps)
+        value = min(float(self.lambda_base), value)
+        return float(min(self.lambda_max, max(self.lambda_min, value)))
+
     def lambdas(self, edge_names: list[str] | None = None) -> dict[str, float]:
         names = edge_names if edge_names is not None else sorted(self.ema)
         return {name: self.lambda_for(name) for name in names}

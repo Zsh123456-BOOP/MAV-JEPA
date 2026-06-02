@@ -316,6 +316,14 @@ ABLATION_MAP = {
     "mv_jepa_adaptive_lambda": "A3",
     "mv_jepa_adaptive_edge_dropout": "A4",
     "mav_jepa_full": "A5",
+    "mv_sft_lora": "A6",
+    "mav_qr_stopgrad_p25_l005": "A7",
+    "mav_qr_stopgrad_p50_l005": "A8",
+    "mav_qr_normmse_p25_l005": "A9",
+    "mav_qr_stopgrad_p125_l005": "A10",
+    "mav_qra_safe_all_p25_l005": "A11",
+    "mav_qa_only_p25_l005": "A12",
+    "mav_ra_only_p25_l005": "A13",
 }
 
 ABLATION_LABELS = {
@@ -325,6 +333,14 @@ ABLATION_LABELS = {
     "A3": "MV-JEPA + adaptive lambda only",
     "A4": "MV-JEPA + adaptive edge dropout only",
     "A5": "MAV-JEPA full",
+    "A6": "MV trainer CE-only sanity",
+    "A7": "Revised Q->R stop-grad, p=0.25, lambda=0.05",
+    "A8": "Revised Q->R stop-grad, p=0.50, lambda=0.05",
+    "A9": "Revised Q->R normalized MSE, p=0.25, lambda=0.05",
+    "A10": "Revised Q->R stop-grad, p=0.125, lambda=0.05",
+    "A11": "Safe all-edge Q/R/A stop-grad, p=0.25, lambda=0.05",
+    "A12": "Q->A answer-target diagnostic, p=0.25, lambda=0.05",
+    "A13": "R->A answer-target diagnostic, p=0.25, lambda=0.05",
 }
 
 

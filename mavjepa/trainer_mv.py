@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import random
+import re
 import time
 from collections import Counter, defaultdict
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +17,7 @@ from torch.utils.data import DataLoader, Dataset
 from .adaptive_lambda import AdaptiveLambda
 from .edge_sampler import EdgeSampler
 from .logging_utils import append_jsonl
-from .losses import jepa_loss, last_token_hidden
+from .losses import jepa_loss, pooled_hidden
 
 
 class MVJEPADataset(Dataset):
@@ -95,6 +98,7 @@ class MultiViewTrainer:
         self.logger = logger
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.sampler = EdgeSampler(args.edge_dropout, args.edge_budget, args.edge_p_min, seed=args.finetune_seed)
+        self.rng = random.Random(args.finetune_seed)
         self.lambda_controller = AdaptiveLambda(
             lambda_base=args.lambda_base,
             lambda_min=args.lambda_min,
@@ -110,6 +114,9 @@ class MultiViewTrainer:
             for name, cfg in self.view_config.get("views", {}).items()
             if isinstance(cfg, dict)
         }
+        self.allowed_edges = parse_allowed_edges(getattr(args, "allowed_edges", None))
+        self.lambda_mode = getattr(args, "lambda_mode", "fixed")
+        self.last_mv_loss_info: dict[str, Any] = {}
         self.total_params = sum(param.numel() for param in self.model.parameters())
         self.trainable_params = sum(param.numel() for param in self.model.parameters() if param.requires_grad)
 
@@ -145,7 +152,11 @@ class MultiViewTrainer:
                 labels = batch["labels"].to(self.device)
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels, use_cache=False)
                 ce_loss = outputs.loss
-                mv_loss, edge_log, selected_count, used_count, batch_view_tokens = self.compute_mv_loss(batch)
+                mv_loss, edge_log, selected_count, used_count, batch_view_tokens = self.compute_mv_loss(
+                    batch=batch,
+                    ce_loss=ce_loss,
+                    step=steps,
+                )
                 if not torch.isfinite(mv_loss):
                     self.logger.warning("Non-finite MV loss at step %s; using CE only", steps)
                     mv_loss = ce_loss.new_tensor(0.0)
@@ -172,6 +183,14 @@ class MultiViewTrainer:
                     "epoch": epoch + (batch_idx + 1) / max(1, len(loader)),
                     "ce_loss": float(ce_loss.detach().cpu()),
                     "jepa_loss": float(mv_loss.detach().cpu()),
+                    "jepa_loss_raw": self.last_mv_loss_info.get("raw_loss"),
+                    "jepa_loss_after_warmup": self.last_mv_loss_info.get("loss_after_warmup"),
+                    "jepa_warmup": self.last_mv_loss_info.get("warmup"),
+                    "jepa_step_prob_effective": self.last_mv_loss_info.get("step_prob_effective"),
+                    "jepa_skipped": self.last_mv_loss_info.get("skipped"),
+                    "jepa_skip_reason": self.last_mv_loss_info.get("skip_reason"),
+                    "jepa_ce_ratio_cap_value": self.last_mv_loss_info.get("ce_ratio_cap_value"),
+                    "jepa_reduce": getattr(self.args, "jepa_reduce", "sum"),
                     "total_loss": float(total_loss.detach().cpu()),
                     "learning_rate": self.args.learning_rate,
                     "active_edges": [item["name"] for item in edge_log],
@@ -224,16 +243,37 @@ class MultiViewTrainer:
             "jepa_edges_per_step": selected_edges_total / max(1, steps),
             "jepa_edges_used_per_step": used_edges_total / max(1, steps),
             "edge_sampling_frequency": dict(self.edge_counts),
-            "lambda_history": self.lambda_controller.state_dict() if self.args.adaptive_lambda else None,
+            "lambda_history": self.lambda_controller.state_dict()
+            if self.lambda_mode in {"current_adaptive", "inverse_loss"}
+            else None,
             "same_flop_accuracy": None,
             "trainable_params": self.trainable_params,
             "total_params": self.total_params,
             "eval_file": eval_file,
         }
 
-    def compute_mv_loss(self, batch: dict[str, Any]) -> tuple[torch.Tensor, list[dict[str, Any]], int, int, int]:
+    def compute_mv_loss(
+        self,
+        batch: dict[str, Any],
+        ce_loss: torch.Tensor,
+        step: int,
+    ) -> tuple[torch.Tensor, list[dict[str, Any]], int, int, int]:
         if not self.args.mv_jepa:
-            return next(self.model.parameters()).new_tensor(0.0), [], 0, 0, 0
+            return self.zero_mv_result(skip_reason="disabled", ce_loss=ce_loss)
+        if step < getattr(self.args, "jepa_start_step", 0):
+            return self.zero_mv_result(skip_reason="before_start_step", ce_loss=ce_loss, step=step)
+
+        warmup = self.jepa_warmup(step)
+        step_prob = self.current_jepa_step_prob(warmup)
+        if self.rng.random() > step_prob:
+            return self.zero_mv_result(
+                skip_reason="step_dropout",
+                ce_loss=ce_loss,
+                step=step,
+                warmup=warmup,
+                step_prob=step_prob,
+            )
+
         losses = []
         edge_log = []
         selected_count = 0
@@ -244,20 +284,33 @@ class MultiViewTrainer:
             selected, probs = self.sampler.sample(candidate_edges)
             selected_count += len(selected)
             for edge in selected:
-                src_text = views.get(edge["src"])
-                tgt_text = views.get(edge["tgt"])
+                src_text = self.prepare_view_text(edge["src"], views.get(edge["src"]))
+                tgt_text = self.prepare_view_text(edge["tgt"], views.get(edge["tgt"]))
                 if not src_text or not tgt_text:
                     continue
-                src_hidden, src_tokens = self.encode_view(src_text, view_name=edge["src"], predictors=self.args.predictors)
-                tgt_hidden, tgt_tokens = self.encode_view(tgt_text, view_name=edge["tgt"], predictors=0)
+                min_target_tokens = int(getattr(self.args, "min_target_tokens", 0) or 0)
+                if edge.get("tgt") == "A" and min_target_tokens > 0:
+                    estimated_target_tokens = self.count_view_tokens(tgt_text, view_name=edge["tgt"])
+                    if estimated_target_tokens < min_target_tokens:
+                        continue
+                src_hidden, src_tokens = self.encode_view(
+                    src_text,
+                    view_name=edge["src"],
+                    predictors=self.args.predictors,
+                    grad=True,
+                    pooling=getattr(self.args, "pooling", "last"),
+                )
+                tgt_hidden, tgt_tokens = self.encode_view(
+                    tgt_text,
+                    view_name=edge["tgt"],
+                    predictors=0,
+                    grad=not getattr(self.args, "target_no_grad", False),
+                    pooling=getattr(self.args, "target_pooling", "last"),
+                )
                 view_tokens += src_tokens + tgt_tokens
                 raw_loss = jepa_loss(src_hidden, tgt_hidden, self.args.mv_loss_type, self.args.detach_target)
                 edge_name = edge["name"]
-                lam = (
-                    self.lambda_controller.lambda_for(edge_name)
-                    if self.args.adaptive_lambda
-                    else float(self.args.lambda_base)
-                )
+                lam = self.lambda_for_edge(edge_name)
                 weighted = raw_loss * lam
                 losses.append(weighted)
                 self.edge_counts[edge_name] += 1
@@ -272,36 +325,158 @@ class MultiViewTrainer:
                         "prob": probs.get(edge_name),
                     }
                 )
-        if raw_losses_by_edge and self.args.adaptive_lambda:
+        if raw_losses_by_edge and self.lambda_mode in {"current_adaptive", "inverse_loss"}:
             self.lambda_controller.update_many(
                 {name: sum(values) / len(values) for name, values in raw_losses_by_edge.items()}
             )
         if not losses:
-            return next(self.model.parameters()).new_tensor(0.0), edge_log, selected_count, 0, view_tokens
-        return torch.stack(losses).sum(), edge_log, selected_count, len(losses), view_tokens
+            zero, _, _, _, _ = self.zero_mv_result(
+                skip_reason="no_usable_edges",
+                ce_loss=ce_loss,
+                step=step,
+                warmup=warmup,
+                step_prob=step_prob,
+            )
+            return zero, edge_log, selected_count, 0, view_tokens
+
+        loss_stack = torch.stack(losses)
+        raw_mv_loss = loss_stack.mean() if getattr(self.args, "jepa_reduce", "sum") == "mean" else loss_stack.sum()
+        loss_after_warmup = raw_mv_loss * warmup
+        mv_loss = loss_after_warmup
+        cap_value = None
+        ratio_cap = float(getattr(self.args, "jepa_ce_ratio_cap", 0.0) or 0.0)
+        if ratio_cap > 0.0:
+            cap = ratio_cap * ce_loss.detach()
+            cap_value = float(cap.detach().cpu())
+            mv_loss = torch.minimum(mv_loss, cap)
+        self.last_mv_loss_info = {
+            "raw_loss": float(raw_mv_loss.detach().cpu()),
+            "loss_after_warmup": float(loss_after_warmup.detach().cpu()),
+            "warmup": warmup,
+            "step_prob_effective": step_prob,
+            "skipped": False,
+            "skip_reason": None,
+            "ce_ratio_cap_value": cap_value,
+        }
+        return mv_loss, edge_log, selected_count, len(losses), view_tokens
 
     def candidate_edges(self, views: dict[str, str], edges: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if not self.config_edges:
-            return edges
-        sample_by_name = {edge.get("name"): edge for edge in edges if edge.get("name")}
-        candidates = []
-        for name, config_edge in self.config_edges.items():
-            if sample_by_name and name not in sample_by_name:
-                continue
-            edge = {**config_edge, **sample_by_name.get(name, {})}
-            if edge.get("src") in views and edge.get("tgt") in views:
-                candidates.append(edge)
+            candidates = list(edges)
+        else:
+            sample_by_name = {edge.get("name"): edge for edge in edges if edge.get("name")}
+            candidates = []
+            for name, config_edge in self.config_edges.items():
+                if sample_by_name and name not in sample_by_name:
+                    continue
+                edge = {**config_edge, **sample_by_name.get(name, {})}
+                if edge.get("src") in views and edge.get("tgt") in views:
+                    candidates.append(edge)
+        if self.allowed_edges is not None:
+            candidates = [edge for edge in candidates if edge.get("name") in self.allowed_edges]
+        if getattr(self.args, "disable_answer_target_edges", False):
+            candidates = [edge for edge in candidates if edge.get("tgt") != "A"]
         return candidates
 
-    def encode_view(self, text: str, view_name: str, predictors: int = 0) -> tuple[torch.Tensor, int]:
+    def lambda_for_edge(self, edge_name: str) -> float:
+        if self.lambda_mode == "current_adaptive":
+            return self.lambda_controller.lambda_for(edge_name)
+        if self.lambda_mode == "inverse_loss":
+            return self.lambda_controller.lambda_for_inverse_loss(edge_name)
+        return float(self.args.lambda_base)
+
+    def zero_mv_result(
+        self,
+        skip_reason: str,
+        ce_loss: torch.Tensor,
+        step: int | None = None,
+        warmup: float = 0.0,
+        step_prob: float = 0.0,
+    ) -> tuple[torch.Tensor, list[dict[str, Any]], int, int, int]:
+        ratio_cap = float(getattr(self.args, "jepa_ce_ratio_cap", 0.0) or 0.0)
+        cap_value = float((ratio_cap * ce_loss.detach()).cpu()) if ratio_cap > 0.0 else None
+        self.last_mv_loss_info = {
+            "raw_loss": 0.0,
+            "loss_after_warmup": 0.0,
+            "warmup": warmup,
+            "step_prob_effective": step_prob,
+            "skipped": True,
+            "skip_reason": skip_reason,
+            "ce_ratio_cap_value": cap_value,
+            "step": step,
+        }
+        return next(self.model.parameters()).new_tensor(0.0), [], 0, 0, 0
+
+    def jepa_warmup(self, step: int) -> float:
+        start_step = int(getattr(self.args, "jepa_start_step", 0) or 0)
+        configured_warmup = int(getattr(self.args, "jepa_warmup_steps", 1) or 0)
+        if configured_warmup <= 0:
+            return 1.0
+        warmup_steps = max(1, configured_warmup)
+        return min(1.0, max(0.0, (step - start_step) / warmup_steps))
+
+    def current_jepa_step_prob(self, warmup: float) -> float:
+        base_prob = min(1.0, max(0.0, float(getattr(self.args, "jepa_step_prob", 1.0) or 0.0)))
+        if getattr(self.args, "jepa_step_schedule", "constant") == "linear_warmup":
+            return base_prob * warmup
+        return base_prob
+
+    def prepare_view_text(self, view_name: str, text: str | None) -> str | None:
+        if text is None:
+            return None
+        if getattr(self.args, "strip_answer_from_reasoning", False) and view_name == "R":
+            return strip_final_answer(text)
+        return text
+
+    def count_view_tokens(self, text: str, view_name: str) -> int:
+        max_length = min(self.args.view_max_length, self.view_max_lengths.get(view_name, self.args.view_max_length))
+        encoded = self.tokenizer(text, add_special_tokens=True, truncation=False)
+        return min(len(list(encoded["input_ids"])), max_length)
+
+    def encode_view(
+        self,
+        text: str,
+        view_name: str,
+        predictors: int = 0,
+        grad: bool = True,
+        pooling: str = "last",
+    ) -> tuple[torch.Tensor, int]:
         if predictors > 0:
             text = text + "".join(f"<|predictor_{idx}|>" for idx in range(1, predictors + 1))
         max_length = min(self.args.view_max_length, self.view_max_lengths.get(view_name, self.args.view_max_length))
         tokenized = tokenize_view_left_truncate(self.tokenizer, text, max_length)
         input_ids = tokenized["input_ids"].to(self.device)
         attention_mask = tokenized["attention_mask"].to(self.device)
-        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, use_cache=False)
-        return last_token_hidden(outputs.hidden_states[-1], attention_mask), int(attention_mask.sum().item())
+        context = nullcontext() if grad else torch.no_grad()
+        with context:
+            outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, use_cache=False)
+            hidden = pooled_hidden(
+                outputs.hidden_states[-1],
+                attention_mask,
+                mode=pooling,
+                last_k=getattr(self.args, "pool_last_k", 64),
+            )
+        return hidden, int(attention_mask.sum().item())
+
+
+def parse_allowed_edges(value: str | None) -> set[str] | None:
+    if value is None:
+        return None
+    names = {part.strip() for part in value.split(",") if part.strip()}
+    return names or None
+
+
+def strip_final_answer(text: str) -> str:
+    before_hash_answer = text.split("####", 1)[0].rstrip()
+    patterns = [
+        r"\b[Tt]he answer is\b.*$",
+        r"\b[Ss]o the answer is\b.*$",
+        r"\b[Tt]herefore,? the answer is\b.*$",
+    ]
+    cleaned = before_hash_answer
+    for pattern in patterns:
+        cleaned = re.sub(pattern, "", cleaned, flags=re.DOTALL).rstrip()
+    return cleaned or before_hash_answer
 
 
 def tokenize_view_left_truncate(tokenizer: Any, text: str, max_length: int) -> dict[str, torch.Tensor]:

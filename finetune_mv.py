@@ -88,18 +88,32 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--view_config")
     parser.add_argument("--predictors", type=int, default=1)
     parser.add_argument("--gamma", type=float, default=1.0)
-    parser.add_argument("--lambda_base", type=float, default=1.0)
+    parser.add_argument("--lambda_base", type=float, default=0.05)
     parser.add_argument("--lambda_min", type=float, default=0.05)
     parser.add_argument("--lambda_max", type=float, default=4.0)
-    parser.add_argument("--adaptive_lambda", action="store_true")
+    parser.add_argument("--lambda_mode", choices=["fixed", "current_adaptive", "inverse_loss"], default="fixed")
     parser.add_argument("--lambda_ema_beta", type=float, default=0.95)
     parser.add_argument("--lambda_warmup_steps", type=int, default=50)
     parser.add_argument("--edge_dropout", default="none", choices=["none", "random", "adaptive"])
     parser.add_argument("--edge_budget", type=int, default=1)
     parser.add_argument("--edge_p_min", type=float, default=0.05)
     parser.add_argument("--target_compute_ratio", type=float, default=1.25)
-    parser.add_argument("--mv_loss_type", default="cosine", choices=["cosine", "mse", "l2"])
-    parser.add_argument("--detach_target", type=str_to_bool, default=False)
+    parser.add_argument("--mv_loss_type", default="cosine", choices=["cosine", "mse", "normalized_mse", "l2"])
+    parser.add_argument("--detach_target", type=str_to_bool, default=True)
+    parser.add_argument("--jepa_start_step", type=int, default=500)
+    parser.add_argument("--jepa_warmup_steps", type=int, default=1000)
+    parser.add_argument("--jepa_step_prob", type=float, default=1.0)
+    parser.add_argument("--jepa_step_schedule", choices=["constant", "linear_warmup"], default="constant")
+    parser.add_argument("--jepa_ce_ratio_cap", type=float, default=0.05)
+    parser.add_argument("--jepa_reduce", choices=["mean", "sum"], default="mean")
+    parser.add_argument("--allowed_edges")
+    parser.add_argument("--disable_answer_target_edges", action="store_true")
+    parser.add_argument("--min_target_tokens", type=int, default=8)
+    parser.add_argument("--target_no_grad", type=str_to_bool, default=True)
+    parser.add_argument("--pooling", choices=["last", "mean", "mean_last_k"], default="last")
+    parser.add_argument("--target_pooling", choices=["last", "mean", "mean_last_k"], default="mean_last_k")
+    parser.add_argument("--pool_last_k", type=int, default=64)
+    parser.add_argument("--strip_answer_from_reasoning", action="store_true")
     parser.add_argument("--track_flop", action="store_true")
     parser.add_argument("--same_flop", action="store_true")
     parser.add_argument("--debug", action="store_true")
@@ -160,12 +174,26 @@ def build_run_config(args: argparse.Namespace, requested_model: str, model_meta:
         "view_config": args.view_config,
         "gamma": args.gamma,
         "lambda_base": args.lambda_base,
-        "adaptive_lambda": args.adaptive_lambda,
+        "lambda_mode": args.lambda_mode,
         "edge_dropout": args.edge_dropout,
         "edge_budget": args.edge_budget,
         "target_compute_ratio": args.target_compute_ratio,
         "mv_loss_type": args.mv_loss_type,
         "detach_target": args.detach_target,
+        "jepa_start_step": args.jepa_start_step,
+        "jepa_warmup_steps": args.jepa_warmup_steps,
+        "jepa_step_prob": args.jepa_step_prob,
+        "jepa_step_schedule": args.jepa_step_schedule,
+        "jepa_ce_ratio_cap": args.jepa_ce_ratio_cap,
+        "jepa_reduce": args.jepa_reduce,
+        "allowed_edges": args.allowed_edges,
+        "disable_answer_target_edges": args.disable_answer_target_edges,
+        "min_target_tokens": args.min_target_tokens,
+        "target_no_grad": args.target_no_grad,
+        "pooling": args.pooling,
+        "target_pooling": args.target_pooling,
+        "pool_last_k": args.pool_last_k,
+        "strip_answer_from_reasoning": args.strip_answer_from_reasoning,
         "track_flop": args.track_flop,
         "same_flop": args.same_flop,
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
